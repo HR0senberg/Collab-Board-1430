@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Совместная доска - Школа 1430</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            overflow: hidden;
+            background: #f5f5f5;
+        }
+
+        .toolbar {
+            background: #ffffff;
+            border-bottom: 2px solid #e0e0e0;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .toolbar-section {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toolbar-separator {
+            width: 1px;
+            height: 30px;
+            background: #e0e0e0;
+        }
+
+        .logo {
+            font-weight: 600;
+            font-size: 18px;
+            color: #1E88E5;
+        }
+
+        .room-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #f0f7ff;
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid #1E88E5;
+        }
+
+        .room-label {
+            font-size: 12px;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .room-id {
+            font-family: monospace;
+            font-weight: 600;
+            color: #1E88E5;
+            font-size: 14px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #fff;
+            color: #333;
+            border: 1px solid #ddd;
+        }
+
+        .btn:hover {
+            background: #f5f5f5;
+            transform: translateY(-1px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary {
+            background: #1E88E5;
+            color: white;
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background: #1976D2;
+        }
+
+        .btn-danger {
+            background: #E53935;
+            color: white;
+            border: none;
+        }
+
+        .btn-danger:hover {
+            background: #D32F2F;
+        }
+
+        .mode-toggle {
+            display: flex;
+            background: #f5f5f5;
+            border-radius: 6px;
+            padding: 2px;
+        }
+
+        .mode-btn {
+            padding: 8px 20px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #666;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .mode-btn.active {
+            background: #1E88E5;
+            color: white;
+        }
+
+        .color-picker {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .color-option {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .color-option:hover {
+            transform: scale(1.1);
+        }
+
+        .color-option.active {
+            border: 3px solid #1E88E5;
+            box-shadow: 0 0 0 2px white;
+        }
+
+        .size-picker {
+            display: flex;
+            gap: 8px;
+        }
+
+        .size-option {
+            padding: 6px 14px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .size-option:hover {
+            background: #f5f5f5;
+        }
+
+        .size-option.active {
+            background: #1E88E5;
+            color: white;
+            border-color: #1E88E5;
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            height: calc(100vh - 70px);
+            background: white;
+            overflow: hidden;
+        }
+
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            cursor: crosshair;
+        }
+
+        .text-box {
+            position: absolute;
+            padding: 8px;
+            border: 2px dashed transparent;
+            cursor: move;
+            min-width: 100px;
+            word-wrap: break-word;
+            transition: border 0.2s;
+        }
+
+        .text-box:hover {
+            border-color: #1E88E5;
+        }
+
+        .text-box.editing {
+            border-color: #1E88E5;
+            border-style: solid;
+        }
+
+        .text-input {
+            border: none;
+            outline: none;
+            background: transparent;
+            font-family: inherit;
+            width: 100%;
+            min-width: 200px;
+        }
+
+        .text-delete {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            width: 24px;
+            height: 24px;
+            background: #E53935;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            line-height: 1;
+            display: none;
+        }
+
+        .text-box:hover .text-delete {
+            display: block;
+        }
+
+        .notification {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: #43A047;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 6px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            animation: slideIn 0.3s ease;
+            z-index: 1000;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .label {
+            font-size: 12px;
+            color: #666;
+            font-weight: 500;
+            margin-right: 4px;
+        }
+
+        @media (max-width: 768px) {
+            .toolbar {
+                padding: 8px 12px;
+                gap: 12px;
+            }
+
+            .toolbar-separator {
+                display: none;
+            }
+
+            .color-option {
+                width: 28px;
+                height: 28px;
+            }
+
+            .logo {
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <div class="toolbar-section">
+            <div class="logo">Школа 1430</div>
+        </div>
+
+        <div class="toolbar-separator"></div>
+
+        <div class="toolbar-section room-info">
+            <span class="room-label">ID комнаты:</span>
+            <span class="room-id" id="roomId"></span>
+            <button class="btn btn-primary" id="copyLinkBtn">Копировать ссылку</button>
+        </div>
+
+        <div class="toolbar-separator"></div>
+
+        <div class="toolbar-section">
+            <div class="mode-toggle">
+                <button class="mode-btn active" data-mode="draw">Рисование</button>
+                <button class="mode-btn" data-mode="text">Текст</button>
+            </div>
+        </div>
+
+        <div class="toolbar-separator"></div>
+
+        <div class="toolbar-section" id="drawTools">
+            <span class="label">Цвет:</span>
+            <div class="color-picker" id="colorPicker"></div>
+            <span class="label">Размер:</span>
+            <div class="size-picker" id="brushSizePicker">
+                <button class="size-option" data-size="2">Тонкий</button>
+                <button class="size-option active" data-size="5">Средний</button>
+                <button class="size-option" data-size="10">Толстый</button>
+            </div>
+            <button class="btn" id="eraserBtn">Ластик</button>
+        </div>
+
+        <div class="toolbar-section" id="textTools" style="display: none;">
+            <span class="label">Цвет:</span>
+            <div class="color-picker" id="textColorPicker"></div>
+            <span class="label">Размер:</span>
+            <div class="size-picker" id="textSizePicker">
+                <button class="size-option" data-size="14px">Маленький</button>
+                <button class="size-option active" data-size="20px">Средний</button>
+                <button class="size-option" data-size="28px">Большой</button>
+            </div>
+        </div>
+
+        <div class="toolbar-separator"></div>
+
+        <div class="toolbar-section">
+            <button class="btn btn-danger" id="clearBtn">Очистить</button>
+            <button class="btn" id="saveBtn">Сохранить</button>
+        </div>
+    </div>
+
+    <div class="canvas-container" id="canvasContainer">
+        <canvas id="canvas"></canvas>
+    </div>
+
+    <script>
+        // Application state
+        const state = {
+            mode: 'draw',
+            roomId: '',
+            currentColor: '#000000',
+            brushSize: 5,
+            textSize: '20px',
+            isDrawing: false,
+            isEraser: false,
+            strokes: [],
+            textBoxes: [],
+            currentStroke: [],
+            draggedTextBox: null,
+            dragOffset: { x: 0, y: 0 }
+        };
+
+        // Colors configuration
+        const colors = [
+            { name: 'Чёрный', value: '#000000' },
+            { name: 'Красный', value: '#E53935' },
+            { name: 'Синий', value: '#1E88E5' },
+            { name: 'Зелёный', value: '#43A047' },
+            { name: 'Жёлтый', value: '#FDD835' },
+            { name: 'Оранжевый', value: '#FB8C00' },
+            { name: 'Фиолетовый', value: '#8E24AA' },
+            { name: 'Розовый', value: '#E91E63' },
+            { name: 'Коричневый', value: '#6D4C41' },
+            { name: 'Белый', value: '#FFFFFF' }
+        ];
+
+        // Canvas setup
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const canvasContainer = document.getElementById('canvasContainer');
+
+        function resizeCanvas() {
+            const rect = canvasContainer.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            redrawCanvas();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Room ID management
+        function generateRoomId() {
+            return Math.random().toString(36).substring(2, 8);
+        }
+
+        function initializeRoom() {
+            let roomId = window.location.hash.substring(1);
+            if (!roomId) {
+                roomId = generateRoomId();
+                window.location.hash = roomId;
+            }
+            state.roomId = roomId;
+            document.getElementById('roomId').textContent = roomId;
+        }
+
+        // Color picker setup
+        function setupColorPicker(containerId, callback) {
+            const container = document.getElementById(containerId);
+            colors.forEach((color, index) => {
+                const colorDiv = document.createElement('div');
+                colorDiv.className = 'color-option' + (index === 0 ? ' active' : '');
+                colorDiv.style.backgroundColor = color.value;
+                colorDiv.title = color.name;
+                colorDiv.addEventListener('click', () => {
+                    container.querySelectorAll('.color-option').forEach(el => el.classList.remove('active'));
+                    colorDiv.classList.add('active');
+                    callback(color.value);
+                });
+                container.appendChild(colorDiv);
+            });
+        }
+
+        setupColorPicker('colorPicker', (color) => {
+            state.currentColor = color;
+            state.isEraser = false;
+            document.getElementById('eraserBtn').classList.remove('active');
+        });
+
+        setupColorPicker('textColorPicker', (color) => {
+            state.currentColor = color;
+        });
+
+        // Brush size picker
+        document.getElementById('brushSizePicker').addEventListener('click', (e) => {
+            if (e.target.classList.contains('size-option')) {
+                document.querySelectorAll('#brushSizePicker .size-option').forEach(el => el.classList.remove('active'));
+                e.target.classList.add('active');
+                state.brushSize = parseInt(e.target.dataset.size);
+            }
+        });
+
+        // Text size picker
+        document.getElementById('textSizePicker').addEventListener('click', (e) => {
+            if (e.target.classList.contains('size-option')) {
+                document.querySelectorAll('#textSizePicker .size-option').forEach(el => el.classList.remove('active'));
+                e.target.classList.add('active');
+                state.textSize = e.target.dataset.size;
+            }
+        });
+
+        // Eraser button
+        document.getElementById('eraserBtn').addEventListener('click', () => {
+            state.isEraser = !state.isEraser;
+            document.getElementById('eraserBtn').classList.toggle('active');
+        });
+
+        // Mode toggle
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                state.mode = btn.dataset.mode;
+                
+                if (state.mode === 'draw') {
+                    document.getElementById('drawTools').style.display = 'flex';
+                    document.getElementById('textTools').style.display = 'none';
+                    canvas.style.cursor = 'crosshair';
+                } else {
+                    document.getElementById('drawTools').style.display = 'none';
+                    document.getElementById('textTools').style.display = 'flex';
+                    canvas.style.cursor = 'text';
+                }
+            });
+        });
+
+        // Drawing functions
+        function startDrawing(e) {
+            if (state.mode !== 'draw') return;
+            state.isDrawing = true;
+            const pos = getMousePos(e);
+            state.currentStroke = [{
+                x: pos.x,
+                y: pos.y,
+                color: state.isEraser ? '#FFFFFF' : state.currentColor,
+                size: state.isEraser ? state.brushSize * 3 : state.brushSize
+            }];
+        }
+
+        function draw(e) {
+            if (!state.isDrawing || state.mode !== 'draw') return;
+            const pos = getMousePos(e);
+            state.currentStroke.push({
+                x: pos.x,
+                y: pos.y,
+                color: state.isEraser ? '#FFFFFF' : state.currentColor,
+                size: state.isEraser ? state.brushSize * 3 : state.brushSize
+            });
+            redrawCanvas();
+        }
+
+        function stopDrawing() {
+            if (state.isDrawing && state.currentStroke.length > 0) {
+                state.strokes.push([...state.currentStroke]);
+                state.currentStroke = [];
+            }
+            state.isDrawing = false;
+        }
+
+        function getMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+            const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
+        }
+
+        function drawStroke(stroke) {
+            if (stroke.length < 2) return;
+            ctx.beginPath();
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            for (let i = 0; i < stroke.length - 1; i++) {
+                ctx.strokeStyle = stroke[i].color;
+                ctx.lineWidth = stroke[i].size;
+                ctx.beginPath();
+                ctx.moveTo(stroke[i].x, stroke[i].y);
+                ctx.lineTo(stroke[i + 1].x, stroke[i + 1].y);
+                ctx.stroke();
+            }
+        }
+
+        function redrawCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            state.strokes.forEach(stroke => drawStroke(stroke));
+            if (state.currentStroke.length > 0) {
+                drawStroke(state.currentStroke);
+            }
+        }
+
+        // Canvas events
+        canvas.addEventListener('mousedown', (e) => {
+            if (state.mode === 'draw') {
+                startDrawing(e);
+            } else if (state.mode === 'text') {
+                createTextBox(e);
+            }
+        });
+
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseleave', stopDrawing);
+
+        // Touch events
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (state.mode === 'draw') {
+                startDrawing(e);
+            } else if (state.mode === 'text') {
+                createTextBox(e);
+            }
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            draw(e);
+        });
+
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            stopDrawing();
+        });
+
+        // Text box functions
+        function createTextBox(e) {
+            const pos = getMousePos(e);
+            const textBox = {
+                id: Date.now(),
+                x: pos.x,
+                y: pos.y,
+                text: '',
+                color: state.currentColor,
+                size: state.textSize
+            };
+            state.textBoxes.push(textBox);
+            renderTextBox(textBox, true);
+        }
+
+        function renderTextBox(textBox, focus = false) {
+            let element = document.getElementById('text-' + textBox.id);
+            if (!element) {
+                element = document.createElement('div');
+                element.id = 'text-' + textBox.id;
+                element.className = 'text-box';
+                element.style.left = textBox.x + 'px';
+                element.style.top = textBox.y + 'px';
+                element.style.color = textBox.color;
+                element.style.fontSize = textBox.size;
+
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'text-input';
+                input.value = textBox.text;
+                input.style.fontSize = textBox.size;
+                input.style.color = textBox.color;
+                input.placeholder = 'Введите текст...';
+
+                input.addEventListener('input', (e) => {
+                    textBox.text = e.target.value;
+                });
+
+                input.addEventListener('focus', () => {
+                    element.classList.add('editing');
+                });
+
+                input.addEventListener('blur', () => {
+                    element.classList.remove('editing');
+                });
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'text-delete';
+                deleteBtn.innerHTML = '×';
+                deleteBtn.addEventListener('click', () => {
+                    state.textBoxes = state.textBoxes.filter(tb => tb.id !== textBox.id);
+                    element.remove();
+                });
+
+                element.appendChild(input);
+                element.appendChild(deleteBtn);
+
+                // Dragging functionality
+                element.addEventListener('mousedown', (e) => {
+                    if (e.target === input) return;
+                    state.draggedTextBox = textBox;
+                    state.dragOffset = {
+                        x: e.clientX - textBox.x,
+                        y: e.clientY - textBox.y
+                    };
+                });
+
+                canvasContainer.appendChild(element);
+
+                if (focus) {
+                    input.focus();
+                }
+            }
+        }
+
+        // Text box dragging
+        document.addEventListener('mousemove', (e) => {
+            if (state.draggedTextBox) {
+                const newX = e.clientX - state.dragOffset.x;
+                const newY = e.clientY - state.dragOffset.y;
+                state.draggedTextBox.x = newX;
+                state.draggedTextBox.y = newY;
+                const element = document.getElementById('text-' + state.draggedTextBox.id);
+                if (element) {
+                    element.style.left = newX + 'px';
+                    element.style.top = newY + 'px';
+                }
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            state.draggedTextBox = null;
+        });
+
+        // Clear canvas
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            if (confirm('Вы уверены, что хотите очистить доску?')) {
+                state.strokes = [];
+                state.textBoxes = [];
+                state.currentStroke = [];
+                redrawCanvas();
+                document.querySelectorAll('.text-box').forEach(el => el.remove());
+            }
+        });
+
+        // Save as image
+        document.getElementById('saveBtn').addEventListener('click', () => {
+            // Create a temporary canvas to combine drawing and text
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            const tempCtx = tempCanvas.getContext('2d');
+
+            // Draw the canvas content
+            tempCtx.drawImage(canvas, 0, 0);
+
+            // Draw text boxes
+            state.textBoxes.forEach(textBox => {
+                tempCtx.fillStyle = textBox.color;
+                tempCtx.font = `${textBox.size} Arial`;
+                tempCtx.fillText(textBox.text, textBox.x, textBox.y + parseInt(textBox.size));
+            });
+
+            // Download
+            const link = document.createElement('a');
+            link.download = `школа-1430-доска-${state.roomId}.png`;
+            link.href = tempCanvas.toDataURL();
+            link.click();
+        });
+
+        // Copy link
+        document.getElementById('copyLinkBtn').addEventListener('click', () => {
+            const url = window.location.href;
+            const textArea = document.createElement('textarea');
+            textArea.value = url;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-9999px';
+            document.body.appendChild(textArea);
+            textArea.select();
+            
+            try {
+                document.execCommand('copy');
+                showNotification('Ссылка скопирована!');
+            } catch (err) {
+                console.error('Failed to copy:', err);
+            }
+            
+            document.body.removeChild(textArea);
+        });
+
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Initialize
+        initializeRoom();
+    </script>
+</body>
+</html>
