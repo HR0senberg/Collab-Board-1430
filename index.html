@@ -12,110 +12,119 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
             overflow: hidden;
-            background: #f5f5f5;
+            background: #F8FAFC;
         }
 
         .toolbar {
-            background: #ffffff;
-            border-bottom: 2px solid #e0e0e0;
-            padding: 12px 20px;
+            background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+            padding: 20px 24px;
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: 24px;
             flex-wrap: wrap;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.08);
         }
 
         .toolbar-section {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
         }
 
         .toolbar-separator {
             width: 1px;
-            height: 30px;
-            background: #e0e0e0;
+            height: 32px;
+            background: rgba(255, 255, 255, 0.25);
         }
 
         .logo {
-            font-weight: 600;
-            font-size: 18px;
-            color: #1E88E5;
+            font-weight: 700;
+            font-size: 20px;
+            color: #FFFFFF;
+            letter-spacing: -0.02em;
         }
 
         .room-info {
             display: flex;
             align-items: center;
-            gap: 8px;
-            background: #f0f7ff;
-            padding: 6px 12px;
-            border-radius: 6px;
-            border: 1px solid #1E88E5;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 8px 14px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .room-label {
-            font-size: 12px;
-            color: #666;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.85);
             font-weight: 500;
         }
 
         .room-id {
             font-family: monospace;
             font-weight: 600;
-            color: #1E88E5;
-            font-size: 14px;
+            color: #FFFFFF;
+            font-size: 15px;
+            letter-spacing: 0.5px;
         }
 
         .btn {
-            padding: 8px 16px;
+            padding: 9px 18px;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             font-size: 14px;
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s;
-            background: #fff;
-            color: #333;
-            border: 1px solid #ddd;
+            transition: all 0.2s ease;
+            background: rgba(255, 255, 255, 0.95);
+            color: #1E293B;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
 
         .btn:hover {
-            background: #f5f5f5;
-            transform: translateY(-1px);
+            background: #FFFFFF;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
 
         .btn:active {
             transform: translateY(0);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
 
         .btn-primary {
-            background: #1E88E5;
+            background: #06B6D4;
             color: white;
             border: none;
+            box-shadow: 0 2px 4px rgba(6, 182, 212, 0.3);
         }
 
         .btn-primary:hover {
-            background: #1976D2;
+            background: #0891B2;
+            box-shadow: 0 4px 12px rgba(6, 182, 212, 0.4);
         }
 
         .btn-danger {
-            background: #E53935;
+            background: #EF4444;
             color: white;
             border: none;
+            box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
         }
 
         .btn-danger:hover {
-            background: #D32F2F;
+            background: #DC2626;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
         }
 
         .mode-toggle {
             display: flex;
-            background: #f5f5f5;
-            border-radius: 6px;
-            padding: 2px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            padding: 4px;
+            backdrop-filter: blur(10px);
         }
 
         .mode-btn {
@@ -125,70 +134,84 @@
             cursor: pointer;
             font-size: 14px;
             font-weight: 500;
-            color: #666;
-            border-radius: 4px;
-            transition: all 0.2s;
+            color: rgba(255, 255, 255, 0.7);
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .mode-btn:hover {
+            color: rgba(255, 255, 255, 0.9);
         }
 
         .mode-btn.active {
-            background: #1E88E5;
-            color: white;
+            background: rgba(255, 255, 255, 0.95);
+            color: #6366F1;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
 
         .color-picker {
             display: flex;
-            gap: 6px;
+            gap: 8px;
             align-items: center;
         }
 
         .color-option {
-            width: 32px;
-            height: 32px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
             cursor: pointer;
-            border: 2px solid transparent;
-            transition: all 0.2s;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
         }
 
         .color-option:hover {
-            transform: scale(1.1);
+            transform: scale(1.15);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.25);
         }
 
         .color-option.active {
-            border: 3px solid #1E88E5;
-            box-shadow: 0 0 0 2px white;
+            border: 3px solid #FFFFFF;
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.4), 0 4px 12px rgba(0,0,0,0.3);
+            transform: scale(1.1);
         }
 
         .size-picker {
             display: flex;
-            gap: 8px;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 4px;
+            border-radius: 8px;
         }
 
         .size-option {
-            padding: 6px 14px;
-            border: 1px solid #ddd;
-            background: white;
-            border-radius: 4px;
+            padding: 7px 16px;
+            border: none;
+            background: transparent;
+            border-radius: 6px;
             cursor: pointer;
             font-size: 13px;
-            transition: all 0.2s;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            color: rgba(255, 255, 255, 0.7);
         }
 
         .size-option:hover {
-            background: #f5f5f5;
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.9);
         }
 
         .size-option.active {
-            background: #1E88E5;
-            color: white;
-            border-color: #1E88E5;
+            background: rgba(255, 255, 255, 0.95);
+            color: #6366F1;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
         }
 
         .canvas-container {
             position: relative;
             width: 100%;
-            height: calc(100vh - 70px);
-            background: white;
+            height: calc(100vh - 80px);
+            background: #FAFAFA;
             overflow: hidden;
         }
 
@@ -197,50 +220,65 @@
             top: 0;
             left: 0;
             cursor: crosshair;
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 0;
         }
 
         .text-box {
             position: absolute;
-            padding: 8px;
+            padding: 10px;
             border: 2px dashed transparent;
             cursor: move;
             min-width: 100px;
             word-wrap: break-word;
-            transition: border 0.2s;
+            transition: all 0.2s ease;
+            border-radius: 6px;
         }
 
         .text-box:hover {
-            border-color: #1E88E5;
+            border-color: #06B6D4;
+            background: rgba(6, 182, 212, 0.05);
         }
 
         .text-box.editing {
-            border-color: #1E88E5;
+            border-color: #6366F1;
             border-style: solid;
+            background: rgba(99, 102, 241, 0.05);
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
         }
 
         .text-input {
             border: none;
             outline: none;
             background: transparent;
-            font-family: inherit;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
             width: 100%;
             min-width: 200px;
         }
 
         .text-delete {
             position: absolute;
-            top: -10px;
-            right: -10px;
-            width: 24px;
-            height: 24px;
-            background: #E53935;
+            top: -12px;
+            right: -12px;
+            width: 28px;
+            height: 28px;
+            background: #EF4444;
             color: white;
-            border: none;
+            border: 2px solid white;
             border-radius: 50%;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 18px;
             line-height: 1;
             display: none;
+            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+            transition: all 0.2s ease;
+        }
+
+        .text-delete:hover {
+            background: #DC2626;
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.5);
         }
 
         .text-box:hover .text-delete {
@@ -249,38 +287,47 @@
 
         .notification {
             position: fixed;
-            top: 80px;
-            right: 20px;
-            background: #43A047;
+            bottom: 24px;
+            right: 24px;
+            background: #1E293B;
             color: white;
-            padding: 12px 20px;
-            border-radius: 6px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            padding: 14px 24px;
+            border-radius: 10px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
             animation: slideIn 0.3s ease;
             z-index: 1000;
+            font-size: 14px;
+            font-weight: 500;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         @keyframes slideIn {
             from {
-                transform: translateX(400px);
+                transform: translateY(100px) scale(0.8);
                 opacity: 0;
             }
             to {
-                transform: translateX(0);
+                transform: translateY(0) scale(1);
                 opacity: 1;
             }
         }
 
         .label {
-            font-size: 12px;
-            color: #666;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.85);
             font-weight: 500;
             margin-right: 4px;
         }
 
+        #eraserBtn.active {
+            background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+            color: white;
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+        }
+
         @media (max-width: 768px) {
             .toolbar {
-                padding: 8px 12px;
+                padding: 12px 16px;
                 gap: 12px;
             }
 
@@ -289,12 +336,16 @@
             }
 
             .color-option {
-                width: 28px;
-                height: 28px;
+                width: 32px;
+                height: 32px;
             }
 
             .logo {
-                font-size: 16px;
+                font-size: 18px;
+            }
+            
+            .toolbar-section {
+                gap: 8px;
             }
         }
     </style>
@@ -317,8 +368,8 @@
 
         <div class="toolbar-section">
             <div class="mode-toggle">
-                <button class="mode-btn active" data-mode="draw">Рисование</button>
-                <button class="mode-btn" data-mode="text">Текст</button>
+                <button class="mode-btn active" data-mode="draw">📝 Рисование</button>
+                <button class="mode-btn" data-mode="text">📄 Текст</button>
             </div>
         </div>
 
@@ -373,20 +424,21 @@
             textBoxes: [],
             currentStroke: [],
             draggedTextBox: null,
-            dragOffset: { x: 0, y: 0 }
+            dragOffset: { x: 0, y: 0 },
+            broadcastChannel: null
         };
 
         // Colors configuration
         const colors = [
-            { name: 'Чёрный', value: '#000000' },
-            { name: 'Красный', value: '#E53935' },
-            { name: 'Синий', value: '#1E88E5' },
-            { name: 'Зелёный', value: '#43A047' },
-            { name: 'Жёлтый', value: '#FDD835' },
-            { name: 'Оранжевый', value: '#FB8C00' },
-            { name: 'Фиолетовый', value: '#8E24AA' },
-            { name: 'Розовый', value: '#E91E63' },
-            { name: 'Коричневый', value: '#6D4C41' },
+            { name: 'Чёрный', value: '#1E293B' },
+            { name: 'Красный', value: '#EF4444' },
+            { name: 'Синий', value: '#3B82F6' },
+            { name: 'Зелёный', value: '#10B981' },
+            { name: 'Жёлтый', value: '#FBBF24' },
+            { name: 'Оранжевый', value: '#F97316' },
+            { name: 'Фиолетовый', value: '#A855F7' },
+            { name: 'Розовый', value: '#EC4899' },
+            { name: 'Коричневый', value: '#92400E' },
             { name: 'Белый', value: '#FFFFFF' }
         ];
 
@@ -418,6 +470,101 @@
             }
             state.roomId = roomId;
             document.getElementById('roomId').textContent = roomId;
+            
+            // Initialize Broadcast Channel for collaboration
+            initializeBroadcastChannel();
+        }
+
+        // Broadcast Channel for real-time collaboration
+        function initializeBroadcastChannel() {
+            const channelName = `collaborative_board_${state.roomId}`;
+            state.broadcastChannel = new BroadcastChannel(channelName);
+            
+            // Listen for messages from other tabs
+            state.broadcastChannel.onmessage = (event) => {
+                const message = event.data;
+                
+                if (message.type === 'draw') {
+                    // Add received stroke to our canvas
+                    state.strokes.push(message.stroke);
+                    redrawCanvas();
+                } else if (message.type === 'text') {
+                    handleTextSync(message);
+                } else if (message.type === 'clear') {
+                    // Clear our canvas when someone else clears
+                    clearCanvasState();
+                }
+            };
+        }
+
+        // Broadcast functions
+        function broadcastStroke(stroke) {
+            if (state.broadcastChannel) {
+                state.broadcastChannel.postMessage({
+                    type: 'draw',
+                    stroke: stroke,
+                    timestamp: Date.now()
+                });
+            }
+        }
+
+        function broadcastTextAction(action, textBox) {
+            if (state.broadcastChannel) {
+                state.broadcastChannel.postMessage({
+                    type: 'text',
+                    action: action,
+                    element: textBox,
+                    timestamp: Date.now()
+                });
+            }
+        }
+
+        function broadcastClear() {
+            if (state.broadcastChannel) {
+                state.broadcastChannel.postMessage({
+                    type: 'clear',
+                    timestamp: Date.now()
+                });
+            }
+        }
+
+        // Handle text synchronization
+        function handleTextSync(message) {
+            if (message.action === 'add') {
+                // Check if text box already exists
+                const exists = state.textBoxes.find(tb => tb.id === message.element.id);
+                if (!exists) {
+                    state.textBoxes.push(message.element);
+                    renderTextBox(message.element, false);
+                }
+            } else if (message.action === 'update') {
+                const textBox = state.textBoxes.find(tb => tb.id === message.element.id);
+                if (textBox) {
+                    textBox.text = message.element.text;
+                    textBox.x = message.element.x;
+                    textBox.y = message.element.y;
+                    const element = document.getElementById('text-' + textBox.id);
+                    if (element) {
+                        const input = element.querySelector('.text-input');
+                        if (input) input.value = textBox.text;
+                        element.style.left = textBox.x + 'px';
+                        element.style.top = textBox.y + 'px';
+                    }
+                }
+            } else if (message.action === 'delete') {
+                state.textBoxes = state.textBoxes.filter(tb => tb.id !== message.element.id);
+                const element = document.getElementById('text-' + message.element.id);
+                if (element) element.remove();
+            }
+        }
+
+        // Clear canvas state
+        function clearCanvasState() {
+            state.strokes = [];
+            state.textBoxes = [];
+            state.currentStroke = [];
+            redrawCanvas();
+            document.querySelectorAll('.text-box').forEach(el => el.remove());
         }
 
         // Color picker setup
@@ -517,7 +664,10 @@
 
         function stopDrawing() {
             if (state.isDrawing && state.currentStroke.length > 0) {
-                state.strokes.push([...state.currentStroke]);
+                const stroke = [...state.currentStroke];
+                state.strokes.push(stroke);
+                // Broadcast the stroke to other tabs
+                broadcastStroke(stroke);
                 state.currentStroke = [];
             }
             state.isDrawing = false;
@@ -594,7 +744,7 @@
         function createTextBox(e) {
             const pos = getMousePos(e);
             const textBox = {
-                id: Date.now(),
+                id: Date.now() + Math.random(), // Make ID more unique
                 x: pos.x,
                 y: pos.y,
                 text: '',
@@ -603,6 +753,8 @@
             };
             state.textBoxes.push(textBox);
             renderTextBox(textBox, true);
+            // Broadcast new text box creation
+            broadcastTextAction('add', textBox);
         }
 
         function renderTextBox(textBox, focus = false) {
@@ -626,6 +778,8 @@
 
                 input.addEventListener('input', (e) => {
                     textBox.text = e.target.value;
+                    // Broadcast text update
+                    broadcastTextAction('update', textBox);
                 });
 
                 input.addEventListener('focus', () => {
@@ -642,6 +796,8 @@
                 deleteBtn.addEventListener('click', () => {
                     state.textBoxes = state.textBoxes.filter(tb => tb.id !== textBox.id);
                     element.remove();
+                    // Broadcast deletion
+                    broadcastTextAction('delete', textBox);
                 });
 
                 element.appendChild(input);
@@ -681,17 +837,19 @@
         });
 
         document.addEventListener('mouseup', () => {
+            if (state.draggedTextBox) {
+                // Broadcast position update when dragging ends
+                broadcastTextAction('update', state.draggedTextBox);
+            }
             state.draggedTextBox = null;
         });
 
         // Clear canvas
         document.getElementById('clearBtn').addEventListener('click', () => {
             if (confirm('Вы уверены, что хотите очистить доску?')) {
-                state.strokes = [];
-                state.textBoxes = [];
-                state.currentStroke = [];
-                redrawCanvas();
-                document.querySelectorAll('.text-box').forEach(el => el.remove());
+                clearCanvasState();
+                // Broadcast clear action to other tabs
+                broadcastClear();
             }
         });
 
