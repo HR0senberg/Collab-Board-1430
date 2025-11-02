@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Совместная доска - Школа 1430</title>
     <style>
         * {
@@ -223,6 +223,10 @@
             background: #FFFFFF;
             border: 1px solid #E2E8F0;
             border-radius: 0;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            touch-action: none;
         }
 
         .text-box {
@@ -430,27 +434,84 @@
             box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
         }
 
+        .warning-banner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #FDD835;
+            color: #1E293B;
+            padding: 12px;
+            text-align: center;
+            z-index: 10000;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        /* Mobile-first responsive design */
         @media (max-width: 768px) {
             .toolbar {
-                padding: 12px 16px;
-                gap: 12px;
+                flex-wrap: wrap;
+                padding: 10px;
+                gap: 10px;
             }
 
             .toolbar-separator {
                 display: none;
             }
 
+            /* Larger touch targets - minimum 44x44px */
+            .btn,
+            .mode-btn,
+            .size-option {
+                min-width: 44px;
+                min-height: 44px;
+                padding: 10px 14px;
+                font-size: 13px;
+            }
+
+            /* Larger color circles for easier tapping */
             .color-option {
-                width: 32px;
-                height: 32px;
+                width: 40px;
+                height: 40px;
+                margin: 2px;
             }
 
             .logo {
-                font-size: 18px;
+                font-size: 16px;
             }
             
             .toolbar-section {
                 gap: 8px;
+            }
+            
+            .room-info {
+                font-size: 12px;
+                padding: 6px 10px;
+            }
+            
+            .room-id {
+                font-size: 13px;
+            }
+        }
+        
+        /* Stack controls vertically on very small screens */
+        @media (max-width: 480px) {
+            .toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .toolbar-section {
+                width: 100%;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+            
+            .btn {
+                flex: 1;
+                min-width: 100px;
             }
         }
     </style>
@@ -547,6 +608,17 @@
         const messageBuffer = new Map();
         let lastProcessedSequence = -1;
         
+        // Mobile detection
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        
+        // Active drawings for multi-touch support
+        const activeDrawings = new Map(); // identifier -> drawing state
+        
+        // Throttling for mobile
+        const broadcastThrottle = isMobile ? 100 : 50;
+        let lastBroadcastTime = 0;
+        
         const state = {
             // User & Room
             userId: generateUUID(),
@@ -639,8 +711,18 @@
 
         function resizeCanvas() {
             const rect = canvasContainer.getBoundingClientRect();
-            canvas.width = rect.width;
-            canvas.height = rect.height;
+            
+            // Use device pixel ratio for sharp rendering
+            const dpr = window.devicePixelRatio || 1;
+            const maxDpr = isMobile ? 2 : dpr; // Cap at 2x on mobile for performance
+            
+            canvas.width = rect.width * maxDpr;
+            canvas.height = rect.height * maxDpr;
+            canvas.style.width = rect.width + 'px';
+            canvas.style.height = rect.height + 'px';
+            
+            ctx.scale(maxDpr, maxDpr);
+            
             redrawCanvas();
         }
 
@@ -744,7 +826,42 @@
         // BROADCAST CHANNEL MANAGEMENT
         // ============================================
         
+        function checkCompatibility() {
+            // Check BroadcastChannel support
+            if (!('BroadcastChannel' in window)) {
+                showWarning('⚠️ Ваш браузер не поддерживает совместную работу. Обновите браузер до последней версии или используйте Chrome/Firefox/Safari 15.5+');
+                return false;
+            }
+            
+            // Check touch support
+            if (hasTouch) {
+                console.log('✓ Touch support detected');
+            }
+            
+            // Check canvas support
+            const testCanvas = document.createElement('canvas');
+            if (!testCanvas.getContext || !testCanvas.getContext('2d')) {
+                showError('✗ Ваш браузер не поддерживает Canvas');
+                return false;
+            }
+            
+            console.log('Device info:', {isMobile, hasTouch, userAgent: navigator.userAgent});
+            return true;
+        }
+        
+        function showWarning(message) {
+            const warning = document.createElement('div');
+            warning.className = 'warning-banner';
+            warning.textContent = message;
+            document.body.insertBefore(warning, document.body.firstChild);
+        }
+        
         function initializeBroadcastChannel() {
+            if (!checkCompatibility()) {
+                console.warn('Browser compatibility check failed');
+                return;
+            }
+            
             try {
                 const channelName = `board_${state.roomId}`;
                 state.broadcastChannel = new BroadcastChannel(channelName);
@@ -965,7 +1082,18 @@
             broadcastWithRetry(msg);
         }
         
+        function shouldBroadcast() {
+            const now = Date.now();
+            if (now - lastBroadcastTime < broadcastThrottle) {
+                return false;
+            }
+            lastBroadcastTime = now;
+            return true;
+        }
+        
         function broadcastStroke(stroke) {
+            if (!shouldBroadcast()) return;
+            
             broadcastMessage({
                 type: 'draw',
                 stroke: stroke
@@ -1308,60 +1436,92 @@
             });
         });
 
-        // Drawing functions
-        function startDrawing(e) {
+        // Unified drawing functions for mouse and touch
+        function startDrawing(pos, identifier = 'mouse') {
             if (state.mode !== 'draw') return;
-            state.isDrawing = true;
-            const pos = getMousePos(e);
-            state.currentStroke = [{
-                x: pos.x,
-                y: pos.y,
-                color: state.isEraser ? '#FFFFFF' : state.currentColor,
-                size: state.isEraser ? state.brushSize * 3 : state.brushSize
-            }];
+            
+            activeDrawings.set(identifier, {
+                isDrawing: true,
+                points: [{
+                    x: pos.x,
+                    y: pos.y,
+                    color: state.isEraser ? '#FFFFFF' : state.currentColor,
+                    size: state.isEraser ? state.brushSize * 3 : state.brushSize
+                }]
+            });
+            
+            // For backward compatibility with single-touch
+            if (identifier === 'mouse') {
+                state.isDrawing = true;
+                state.currentStroke = activeDrawings.get(identifier).points;
+            }
         }
 
-        function draw(e) {
-            if (!state.isDrawing || state.mode !== 'draw') return;
-            const pos = getMousePos(e);
-            state.currentStroke.push({
+        function continueDrawing(pos, identifier = 'mouse') {
+            const drawing = activeDrawings.get(identifier);
+            if (!drawing || !drawing.isDrawing) return;
+            
+            drawing.points.push({
                 x: pos.x,
                 y: pos.y,
                 color: state.isEraser ? '#FFFFFF' : state.currentColor,
                 size: state.isEraser ? state.brushSize * 3 : state.brushSize
             });
+            
+            // For backward compatibility
+            if (identifier === 'mouse') {
+                state.currentStroke = drawing.points;
+            }
+            
             redrawCanvas();
         }
 
-        function stopDrawing() {
-            if (state.isDrawing && state.currentStroke.length > 0) {
-                const stroke = {
-                    id: generateUUID(),
-                    userId: state.userId,
-                    points: [...state.currentStroke],
-                    timestamp: Date.now()
-                };
-                
-                state.strokes.push(stroke);
-                state.strokesMap.set(stroke.id, stroke);
-                
-                // Broadcast the stroke to other tabs
-                if (!state.isApplyingRemoteChange) {
-                    broadcastStroke(stroke);
-                }
-                
+        function endDrawing(identifier = 'mouse') {
+            const drawing = activeDrawings.get(identifier);
+            if (!drawing || drawing.points.length === 0) {
+                activeDrawings.delete(identifier);
+                return;
+            }
+            
+            const stroke = {
+                id: generateUUID(),
+                userId: state.userId,
+                points: [...drawing.points],
+                timestamp: Date.now()
+            };
+            
+            state.strokes.push(stroke);
+            state.strokesMap.set(stroke.id, stroke);
+            
+            // Broadcast the stroke to other tabs
+            if (!state.isApplyingRemoteChange) {
+                broadcastStroke(stroke);
+            }
+            
+            activeDrawings.delete(identifier);
+            
+            // For backward compatibility
+            if (identifier === 'mouse') {
+                state.isDrawing = false;
                 state.currentStroke = [];
             }
-            state.isDrawing = false;
         }
 
         function getMousePos(e) {
             const rect = canvas.getBoundingClientRect();
-            const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-            const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+            const clientX = e.clientX;
+            const clientY = e.clientY;
             return {
                 x: clientX - rect.left,
                 y: clientY - rect.top
+            };
+        }
+        
+        function getTouchPos(touch) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: touch.clientX - rect.left,
+                y: touch.clientY - rect.top
             };
         }
 
@@ -1392,38 +1552,95 @@
             }
         }
 
-        // Canvas events
+        // Mouse event handlers
         canvas.addEventListener('mousedown', (e) => {
             if (state.mode === 'draw') {
-                startDrawing(e);
+                const pos = getMousePos(e);
+                startDrawing(pos, 'mouse');
             } else if (state.mode === 'text') {
                 createTextBox(e);
             }
         });
 
-        canvas.addEventListener('mousemove', draw);
-        canvas.addEventListener('mouseup', stopDrawing);
-        canvas.addEventListener('mouseleave', stopDrawing);
+        canvas.addEventListener('mousemove', (e) => {
+            if (state.mode === 'draw') {
+                const pos = getMousePos(e);
+                continueDrawing(pos, 'mouse');
+            }
+        });
+        
+        canvas.addEventListener('mouseup', () => {
+            if (state.mode === 'draw') {
+                endDrawing('mouse');
+            }
+        });
+        
+        canvas.addEventListener('mouseleave', () => {
+            if (state.mode === 'draw') {
+                endDrawing('mouse');
+            }
+        });
 
-        // Touch events
+        // Touch event handlers with multi-touch support
         canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
-            if (state.mode === 'draw') {
-                startDrawing(e);
-            } else if (state.mode === 'text') {
-                createTextBox(e);
+            
+            if (state.mode === 'text') {
+                // For text mode, use first touch only
+                if (e.touches.length === 1) {
+                    createTextBox(e.touches[0]);
+                }
+                return;
             }
-        });
+            
+            // Handle all touches for drawing
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const touch = e.changedTouches[i];
+                const pos = getTouchPos(touch);
+                const id = `touch_${touch.identifier}`;
+                startDrawing(pos, id);
+            }
+        }, {passive: false});
 
         canvas.addEventListener('touchmove', (e) => {
             e.preventDefault();
-            draw(e);
-        });
+            
+            if (state.mode !== 'draw') return;
+            
+            // Handle all active touches
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const touch = e.changedTouches[i];
+                const pos = getTouchPos(touch);
+                const id = `touch_${touch.identifier}`;
+                continueDrawing(pos, id);
+            }
+        }, {passive: false});
 
         canvas.addEventListener('touchend', (e) => {
             e.preventDefault();
-            stopDrawing();
-        });
+            
+            if (state.mode !== 'draw') return;
+            
+            // End all lifted touches
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const touch = e.changedTouches[i];
+                const id = `touch_${touch.identifier}`;
+                endDrawing(id);
+            }
+        }, {passive: false});
+        
+        canvas.addEventListener('touchcancel', (e) => {
+            e.preventDefault();
+            
+            if (state.mode !== 'draw') return;
+            
+            // Cancel all touches
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const touch = e.changedTouches[i];
+                const id = `touch_${touch.identifier}`;
+                endDrawing(id);
+            }
+        }, {passive: false});
 
         // ============================================
         // TEXT BOX FUNCTIONS
