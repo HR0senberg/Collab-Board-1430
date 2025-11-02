@@ -301,6 +301,37 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 8px 14px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.95);
+            font-weight: 500;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10B981;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .status-dot.error {
+            background: #EF4444;
+        }
+
         @keyframes slideIn {
             from {
                 transform: translateY(100px) scale(0.8);
@@ -404,6 +435,13 @@
             <button class="btn btn-danger" id="clearBtn">Очистить</button>
             <button class="btn" id="saveBtn">Сохранить</button>
         </div>
+
+        <div class="toolbar-separator"></div>
+
+        <div class="toolbar-section status-indicator">
+            <span class="status-dot" id="statusDot"></span>
+            <span id="userCount">0 участников онлайн</span>
+        </div>
     </div>
 
     <div class="canvas-container" id="canvasContainer">
@@ -411,22 +449,78 @@
     </div>
 
     <script>
-        // Application state
+        // ============================================
+        // UTILITY FUNCTIONS
+        // ============================================
+        
+        // Generate UUID v4
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        // ============================================
+        // APPLICATION STATE
+        // ============================================
+        
         const state = {
-            mode: 'draw',
+            // User & Room
+            userId: generateUUID(),
             roomId: '',
-            currentColor: '#000000',
+            
+            // Drawing state
+            mode: 'draw',
+            currentColor: '#1E293B',
             brushSize: 5,
             textSize: '20px',
             isDrawing: false,
             isEraser: false,
-            strokes: [],
-            textBoxes: [],
             currentStroke: [],
+            
+            // Data structures - using Maps for O(1) lookup
+            strokes: [],
+            strokesMap: new Map(),
+            textElements: new Map(),
+            textBoxes: [], // Keep for compatibility
+            
+            // Drag state
             draggedTextBox: null,
             dragOffset: { x: 0, y: 0 },
-            broadcastChannel: null
+            
+            // Sync state
+            broadcastChannel: null,
+            processedMessages: new Set(),
+            isApplyingRemoteChange: false,
+            lastSyncTime: Date.now(),
+            
+            // User presence
+            activeUsers: new Map(),
+            heartbeatInterval: null,
+            stateSyncInterval: null,
+            presenceCheckInterval: null,
+            
+            // Operation log for debugging
+            operationLog: [],
+            
+            // Deleted elements tracking
+            deletedElements: new Set()
         };
+
+        // Configuration
+        const config = {
+            heartbeatInterval: 5000,
+            stateSyncInterval: 30000,
+            presenceTimeout: 15000,
+            maxOperationsLog: 100,
+            maxTextElements: 500,
+            processedMessagesTTL: 300000,
+            reconnectInterval: 3000
+        };
+
+        const validMessageTypes = ['draw', 'text-add', 'text-update', 'text-delete', 'clear', 'state-sync', 'heartbeat'];
 
         // Colors configuration
         const colors = [
@@ -457,7 +551,71 @@
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
 
-        // Room ID management
+        // ============================================
+        // LOGGING & DEBUGGING
+        // ============================================
+        
+        function logOperation(category, type, success, details = '') {
+            const log = {
+                category,
+                type,
+                success,
+                details,
+                timestamp: Date.now()
+            };
+            state.operationLog.push(log);
+            
+            // Keep only last 100 operations
+            if (state.operationLog.length > config.maxOperationsLog) {
+                state.operationLog.shift();
+            }
+            
+            // Log to console in debug mode
+            if (success) {
+                console.log(`[${category}] ${type}:`, details || 'success');
+            } else {
+                console.error(`[${category}] ${type} FAILED:`, details);
+            }
+        }
+
+        // ============================================
+        // MESSAGE VALIDATION
+        // ============================================
+        
+        function validateMessage(msg) {
+            if (!msg || typeof msg !== 'object') {
+                logOperation('validation', 'invalid-format', false, 'Not an object');
+                return false;
+            }
+            
+            if (!msg.type || !msg.messageId || !msg.userId) {
+                logOperation('validation', 'missing-fields', false, `type:${msg.type}, mid:${msg.messageId}, uid:${msg.userId}`);
+                return false;
+            }
+            
+            if (!validMessageTypes.includes(msg.type)) {
+                logOperation('validation', 'invalid-type', false, msg.type);
+                return false;
+            }
+            
+            // Check if we've already processed this message
+            if (state.processedMessages.has(msg.messageId)) {
+                logOperation('validation', 'duplicate', false, msg.messageId);
+                return false;
+            }
+            
+            // Don't process our own messages
+            if (msg.userId === state.userId) {
+                return false;
+            }
+            
+            return true;
+        }
+
+        // ============================================
+        // ROOM MANAGEMENT
+        // ============================================
+        
         function generateRoomId() {
             return Math.random().toString(36).substring(2, 8);
         }
@@ -471,97 +629,395 @@
             state.roomId = roomId;
             document.getElementById('roomId').textContent = roomId;
             
+            console.log('Session initialized:', {
+                userId: state.userId,
+                roomId: state.roomId
+            });
+            
             // Initialize Broadcast Channel for collaboration
             initializeBroadcastChannel();
-        }
-
-        // Broadcast Channel for real-time collaboration
-        function initializeBroadcastChannel() {
-            const channelName = `collaborative_board_${state.roomId}`;
-            state.broadcastChannel = new BroadcastChannel(channelName);
             
-            // Listen for messages from other tabs
-            state.broadcastChannel.onmessage = (event) => {
-                const message = event.data;
+            // Start periodic tasks
+            startHeartbeat();
+            startStateSync();
+            startPresenceCheck();
+            startCleanup();
+        }
+
+        // ============================================
+        // BROADCAST CHANNEL MANAGEMENT
+        // ============================================
+        
+        function initializeBroadcastChannel() {
+            try {
+                const channelName = `board_${state.roomId}`;
+                state.broadcastChannel = new BroadcastChannel(channelName);
                 
-                if (message.type === 'draw') {
-                    // Add received stroke to our canvas
-                    state.strokes.push(message.stroke);
-                    redrawCanvas();
-                } else if (message.type === 'text') {
-                    handleTextSync(message);
-                } else if (message.type === 'clear') {
-                    // Clear our canvas when someone else clears
-                    clearCanvasState();
+                state.broadcastChannel.onmessage = (event) => {
+                    handleIncomingMessage(event.data);
+                };
+                
+                state.broadcastChannel.onerror = (error) => {
+                    console.error('Broadcast Channel error:', error);
+                    logOperation('channel', 'error', false, error.message);
+                    updateConnectionStatus(false);
+                    
+                    // Attempt to reconnect
+                    setTimeout(reconnectChannel, config.reconnectInterval);
+                };
+                
+                logOperation('channel', 'initialized', true, channelName);
+                updateConnectionStatus(true);
+                
+            } catch (error) {
+                console.error('Broadcast Channel not available:', error);
+                logOperation('channel', 'init-failed', false, error.message);
+                updateConnectionStatus(false);
+                showNotification('⚠️ Совместная работа недоступна');
+            }
+        }
+        
+        function reconnectChannel() {
+            if (state.broadcastChannel) {
+                try {
+                    state.broadcastChannel.close();
+                } catch (e) {
+                    console.error('Error closing channel:', e);
                 }
+            }
+            initializeBroadcastChannel();
+        }
+        
+        function updateConnectionStatus(connected) {
+            const statusDot = document.getElementById('statusDot');
+            if (statusDot) {
+                if (connected) {
+                    statusDot.classList.remove('error');
+                } else {
+                    statusDot.classList.add('error');
+                }
+            }
+        }
+
+        // ============================================
+        // INCOMING MESSAGE HANDLER
+        // ============================================
+        
+        function handleIncomingMessage(data) {
+            if (!validateMessage(data)) {
+                return;
+            }
+            
+            try {
+                // Mark message as processed
+                state.processedMessages.add(data.messageId);
+                
+                // Set flag to prevent broadcasting our own changes back
+                state.isApplyingRemoteChange = true;
+                
+                switch(data.type) {
+                    case 'draw':
+                        applyStroke(data.stroke);
+                        break;
+                    case 'text-add':
+                        applyTextAdd(data.element);
+                        break;
+                    case 'text-update':
+                        applyTextUpdate(data.element);
+                        break;
+                    case 'text-delete':
+                        applyTextDelete(data.element);
+                        break;
+                    case 'clear':
+                        applyClear();
+                        break;
+                    case 'state-sync':
+                        applyStateSync(data.state);
+                        break;
+                    case 'heartbeat':
+                        recordUserPresence(data.userId, data.timestamp);
+                        break;
+                }
+                
+                state.lastSyncTime = Date.now();
+                logOperation('applied', data.type, true, data.messageId);
+                
+            } catch (error) {
+                console.error('Error applying message:', error);
+                logOperation('applied', data.type, false, error.message);
+            } finally {
+                state.isApplyingRemoteChange = false;
+            }
+        }
+
+        // ============================================
+        // BROADCAST FUNCTIONS
+        // ============================================
+        
+        function broadcastMessage(messageData) {
+            // Don't broadcast if we're applying a remote change
+            if (state.isApplyingRemoteChange) {
+                return;
+            }
+            
+            const msg = {
+                ...messageData,
+                messageId: generateUUID(),
+                userId: state.userId,
+                roomId: state.roomId,
+                timestamp: Date.now()
             };
+            
+            try {
+                if (state.broadcastChannel) {
+                    state.broadcastChannel.postMessage(msg);
+                    logOperation('broadcast', msg.type, true, msg.messageId);
+                }
+            } catch (error) {
+                console.error('Failed to broadcast:', error);
+                logOperation('broadcast', msg.type, false, error.message);
+                updateConnectionStatus(false);
+            }
         }
-
-        // Broadcast functions
+        
         function broadcastStroke(stroke) {
-            if (state.broadcastChannel) {
-                state.broadcastChannel.postMessage({
-                    type: 'draw',
-                    stroke: stroke,
-                    timestamp: Date.now()
-                });
-            }
+            broadcastMessage({
+                type: 'draw',
+                stroke: stroke
+            });
         }
 
-        function broadcastTextAction(action, textBox) {
-            if (state.broadcastChannel) {
-                state.broadcastChannel.postMessage({
-                    type: 'text',
-                    action: action,
-                    element: textBox,
-                    timestamp: Date.now()
-                });
-            }
+        function broadcastTextAction(action, element) {
+            broadcastMessage({
+                type: `text-${action}`,
+                element: element
+            });
         }
 
         function broadcastClear() {
-            if (state.broadcastChannel) {
-                state.broadcastChannel.postMessage({
-                    type: 'clear',
-                    timestamp: Date.now()
+            broadcastMessage({
+                type: 'clear'
+            });
+        }
+        
+        function broadcastStateSync() {
+            const currentState = {
+                strokes: state.strokes,
+                textElements: Array.from(state.textElements.values()),
+                timestamp: Date.now()
+            };
+            
+            broadcastMessage({
+                type: 'state-sync',
+                state: currentState
+            });
+        }
+
+        // ============================================
+        // APPLY INCOMING OPERATIONS
+        // ============================================
+        
+        function applyStroke(stroke) {
+            if (!stroke || !stroke.id) return;
+            
+            // Check if we already have this stroke
+            if (state.strokesMap.has(stroke.id)) {
+                return;
+            }
+            
+            state.strokes.push(stroke);
+            state.strokesMap.set(stroke.id, stroke);
+            redrawCanvas();
+        }
+        
+        function applyTextAdd(element) {
+            if (!element || !element.id) return;
+            
+            // Check if already exists or was deleted
+            if (state.textElements.has(element.id) || state.deletedElements.has(element.id)) {
+                return;
+            }
+            
+            state.textElements.set(element.id, element);
+            state.textBoxes.push(element);
+            renderTextBox(element, false);
+        }
+        
+        function applyTextUpdate(element) {
+            if (!element || !element.id) return;
+            
+            // Ignore if deleted
+            if (state.deletedElements.has(element.id)) {
+                return;
+            }
+            
+            const existing = state.textElements.get(element.id);
+            if (existing) {
+                existing.text = element.text;
+                existing.x = element.x;
+                existing.y = element.y;
+                
+                const domElement = document.getElementById('text-' + element.id);
+                if (domElement) {
+                    const input = domElement.querySelector('.text-input');
+                    if (input && document.activeElement !== input) {
+                        input.value = element.text;
+                    }
+                    domElement.style.left = element.x + 'px';
+                    domElement.style.top = element.y + 'px';
+                }
+            }
+        }
+        
+        function applyTextDelete(element) {
+            if (!element || !element.id) return;
+            
+            state.textElements.delete(element.id);
+            state.textBoxes = state.textBoxes.filter(tb => tb.id !== element.id);
+            state.deletedElements.add(element.id);
+            
+            const domElement = document.getElementById('text-' + element.id);
+            if (domElement) {
+                domElement.remove();
+            }
+        }
+        
+        function applyClear() {
+            clearCanvasState();
+        }
+        
+        function applyStateSync(incomingState) {
+            if (!incomingState) return;
+            
+            // Only apply if newer than our last sync
+            if (incomingState.timestamp && incomingState.timestamp <= state.lastSyncTime) {
+                return;
+            }
+            
+            console.log('Applying state sync:', incomingState);
+            
+            // Merge strokes
+            if (incomingState.strokes) {
+                incomingState.strokes.forEach(stroke => {
+                    if (stroke.id && !state.strokesMap.has(stroke.id)) {
+                        state.strokes.push(stroke);
+                        state.strokesMap.set(stroke.id, stroke);
+                    }
+                });
+                redrawCanvas();
+            }
+            
+            // Merge text elements
+            if (incomingState.textElements) {
+                incomingState.textElements.forEach(element => {
+                    if (element.id && !state.textElements.has(element.id) && !state.deletedElements.has(element.id)) {
+                        state.textElements.set(element.id, element);
+                        state.textBoxes.push(element);
+                        renderTextBox(element, false);
+                    }
                 });
             }
+            
+            state.lastSyncTime = Date.now();
         }
 
-        // Handle text synchronization
-        function handleTextSync(message) {
-            if (message.action === 'add') {
-                // Check if text box already exists
-                const exists = state.textBoxes.find(tb => tb.id === message.element.id);
-                if (!exists) {
-                    state.textBoxes.push(message.element);
-                    renderTextBox(message.element, false);
-                }
-            } else if (message.action === 'update') {
-                const textBox = state.textBoxes.find(tb => tb.id === message.element.id);
-                if (textBox) {
-                    textBox.text = message.element.text;
-                    textBox.x = message.element.x;
-                    textBox.y = message.element.y;
-                    const element = document.getElementById('text-' + textBox.id);
-                    if (element) {
-                        const input = element.querySelector('.text-input');
-                        if (input) input.value = textBox.text;
-                        element.style.left = textBox.x + 'px';
-                        element.style.top = textBox.y + 'px';
+        // ============================================
+        // USER PRESENCE & HEARTBEAT
+        // ============================================
+        
+        function startHeartbeat() {
+            // Send immediate heartbeat
+            sendHeartbeat();
+            
+            // Send periodic heartbeats
+            state.heartbeatInterval = setInterval(() => {
+                sendHeartbeat();
+            }, config.heartbeatInterval);
+        }
+        
+        function sendHeartbeat() {
+            broadcastMessage({
+                type: 'heartbeat'
+            });
+        }
+        
+        function recordUserPresence(userId, timestamp) {
+            state.activeUsers.set(userId, timestamp || Date.now());
+            updateUserCount();
+        }
+        
+        function startPresenceCheck() {
+            state.presenceCheckInterval = setInterval(() => {
+                const now = Date.now();
+                const timeout = config.presenceTimeout;
+                
+                // Remove stale users
+                for (const [userId, lastSeen] of state.activeUsers.entries()) {
+                    if (now - lastSeen > timeout) {
+                        state.activeUsers.delete(userId);
                     }
                 }
-            } else if (message.action === 'delete') {
-                state.textBoxes = state.textBoxes.filter(tb => tb.id !== message.element.id);
-                const element = document.getElementById('text-' + message.element.id);
-                if (element) element.remove();
+                
+                updateUserCount();
+            }, 5000);
+        }
+        
+        function updateUserCount() {
+            const count = state.activeUsers.size + 1; // +1 for current user
+            const userCountEl = document.getElementById('userCount');
+            if (userCountEl) {
+                const word = count === 1 ? 'участник' : (count < 5 ? 'участника' : 'участников');
+                userCountEl.textContent = `${count} ${word} онлайн`;
             }
         }
 
-        // Clear canvas state
+        // ============================================
+        // PERIODIC STATE SYNC
+        // ============================================
+        
+        function startStateSync() {
+            state.stateSyncInterval = setInterval(() => {
+                broadcastStateSync();
+                logOperation('sync', 'state-sync', true, 'Periodic sync');
+            }, config.stateSyncInterval);
+        }
+
+        // ============================================
+        // CLEANUP & MEMORY MANAGEMENT
+        // ============================================
+        
+        function startCleanup() {
+            setInterval(() => {
+                cleanupProcessedMessages();
+                cleanupDeletedElements();
+            }, 60000); // Every minute
+        }
+        
+        function cleanupProcessedMessages() {
+            // Clear old processed message IDs (older than 5 minutes)
+            if (state.processedMessages.size > 1000) {
+                state.processedMessages.clear();
+                logOperation('cleanup', 'processed-messages', true, 'Cleared');
+            }
+        }
+        
+        function cleanupDeletedElements() {
+            // Keep deleted elements set from growing indefinitely
+            if (state.deletedElements.size > 500) {
+                state.deletedElements.clear();
+                logOperation('cleanup', 'deleted-elements', true, 'Cleared');
+            }
+        }
+
+        // ============================================
+        // CANVAS STATE MANAGEMENT
+        // ============================================
+        
         function clearCanvasState() {
             state.strokes = [];
+            state.strokesMap.clear();
             state.textBoxes = [];
+            state.textElements.clear();
             state.currentStroke = [];
             redrawCanvas();
             document.querySelectorAll('.text-box').forEach(el => el.remove());
@@ -664,10 +1120,21 @@
 
         function stopDrawing() {
             if (state.isDrawing && state.currentStroke.length > 0) {
-                const stroke = [...state.currentStroke];
+                const stroke = {
+                    id: generateUUID(),
+                    userId: state.userId,
+                    points: [...state.currentStroke],
+                    timestamp: Date.now()
+                };
+                
                 state.strokes.push(stroke);
+                state.strokesMap.set(stroke.id, stroke);
+                
                 // Broadcast the stroke to other tabs
-                broadcastStroke(stroke);
+                if (!state.isApplyingRemoteChange) {
+                    broadcastStroke(stroke);
+                }
+                
                 state.currentStroke = [];
             }
             state.isDrawing = false;
@@ -684,17 +1151,20 @@
         }
 
         function drawStroke(stroke) {
-            if (stroke.length < 2) return;
+            // Handle both old format (array) and new format (object with points)
+            const points = stroke.points || stroke;
+            if (!points || points.length < 2) return;
+            
             ctx.beginPath();
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
             
-            for (let i = 0; i < stroke.length - 1; i++) {
-                ctx.strokeStyle = stroke[i].color;
-                ctx.lineWidth = stroke[i].size;
+            for (let i = 0; i < points.length - 1; i++) {
+                ctx.strokeStyle = points[i].color;
+                ctx.lineWidth = points[i].size;
                 ctx.beginPath();
-                ctx.moveTo(stroke[i].x, stroke[i].y);
-                ctx.lineTo(stroke[i + 1].x, stroke[i + 1].y);
+                ctx.moveTo(points[i].x, points[i].y);
+                ctx.lineTo(points[i + 1].x, points[i + 1].y);
                 ctx.stroke();
             }
         }
@@ -740,21 +1210,57 @@
             stopDrawing();
         });
 
-        // Text box functions
+        // ============================================
+        // TEXT BOX FUNCTIONS
+        // ============================================
+        
         function createTextBox(e) {
             const pos = getMousePos(e);
             const textBox = {
-                id: Date.now() + Math.random(), // Make ID more unique
+                id: generateUUID(),
+                userId: state.userId,
                 x: pos.x,
                 y: pos.y,
                 text: '',
                 color: state.currentColor,
-                size: state.textSize
+                size: state.textSize,
+                timestamp: Date.now()
             };
+            
             state.textBoxes.push(textBox);
+            state.textElements.set(textBox.id, textBox);
             renderTextBox(textBox, true);
+            
             // Broadcast new text box creation
-            broadcastTextAction('add', textBox);
+            if (!state.isApplyingRemoteChange) {
+                broadcastTextAction('add', textBox);
+            }
+            
+            // Enforce max text elements
+            if (state.textElements.size > config.maxTextElements) {
+                const oldest = state.textBoxes[0];
+                if (oldest) {
+                    deleteTextBox(oldest.id);
+                }
+            }
+        }
+        
+        function deleteTextBox(id) {
+            const textBox = state.textElements.get(id);
+            if (!textBox) return;
+            
+            state.textElements.delete(id);
+            state.textBoxes = state.textBoxes.filter(tb => tb.id !== id);
+            state.deletedElements.add(id);
+            
+            const element = document.getElementById('text-' + id);
+            if (element) {
+                element.remove();
+            }
+            
+            if (!state.isApplyingRemoteChange) {
+                broadcastTextAction('delete', textBox);
+            }
         }
 
         function renderTextBox(textBox, focus = false) {
@@ -778,8 +1284,14 @@
 
                 input.addEventListener('input', (e) => {
                     textBox.text = e.target.value;
+                    const element = state.textElements.get(textBox.id);
+                    if (element) {
+                        element.text = e.target.value;
+                    }
                     // Broadcast text update
-                    broadcastTextAction('update', textBox);
+                    if (!state.isApplyingRemoteChange) {
+                        broadcastTextAction('update', textBox);
+                    }
                 });
 
                 input.addEventListener('focus', () => {
@@ -794,10 +1306,7 @@
                 deleteBtn.className = 'text-delete';
                 deleteBtn.innerHTML = '×';
                 deleteBtn.addEventListener('click', () => {
-                    state.textBoxes = state.textBoxes.filter(tb => tb.id !== textBox.id);
-                    element.remove();
-                    // Broadcast deletion
-                    broadcastTextAction('delete', textBox);
+                    deleteTextBox(textBox.id);
                 });
 
                 element.appendChild(input);
@@ -838,18 +1347,33 @@
 
         document.addEventListener('mouseup', () => {
             if (state.draggedTextBox) {
+                // Update in Map
+                const element = state.textElements.get(state.draggedTextBox.id);
+                if (element) {
+                    element.x = state.draggedTextBox.x;
+                    element.y = state.draggedTextBox.y;
+                }
+                
                 // Broadcast position update when dragging ends
-                broadcastTextAction('update', state.draggedTextBox);
+                if (!state.isApplyingRemoteChange) {
+                    broadcastTextAction('update', state.draggedTextBox);
+                }
             }
             state.draggedTextBox = null;
         });
 
+        // ============================================
+        // UI EVENT HANDLERS
+        // ============================================
+        
         // Clear canvas
         document.getElementById('clearBtn').addEventListener('click', () => {
             if (confirm('Вы уверены, что хотите очистить доску?')) {
                 clearCanvasState();
                 // Broadcast clear action to other tabs
-                broadcastClear();
+                if (!state.isApplyingRemoteChange) {
+                    broadcastClear();
+                }
             }
         });
 
@@ -908,8 +1432,33 @@
             }, 3000);
         }
 
-        // Initialize
+        // ============================================
+        // CLEANUP ON UNLOAD
+        // ============================================
+        
+        window.addEventListener('beforeunload', () => {
+            // Clear intervals
+            if (state.heartbeatInterval) clearInterval(state.heartbeatInterval);
+            if (state.stateSyncInterval) clearInterval(state.stateSyncInterval);
+            if (state.presenceCheckInterval) clearInterval(state.presenceCheckInterval);
+            
+            // Close broadcast channel
+            if (state.broadcastChannel) {
+                try {
+                    state.broadcastChannel.close();
+                } catch (e) {
+                    console.error('Error closing channel:', e);
+                }
+            }
+        });
+
+        // ============================================
+        // INITIALIZE APPLICATION
+        // ============================================
+        
         initializeRoom();
+        console.log('Collaborative whiteboard initialized with enhanced stability');
+        console.log('Active features: UUID tracking, message validation, heartbeat, state sync, presence tracking');
     </script>
 </body>
 </html>
