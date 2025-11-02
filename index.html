@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Совместная доска - Школа 1430</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -359,23 +360,43 @@
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         }
         
-        .connection-title {
-            font-size: 32px;
-            font-weight: 700;
-            color: #1E293B;
-            margin-bottom: 8px;
+        .school-branding {
             text-align: center;
-            background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+            margin-bottom: 30px;
+            padding: 20px 0;
+        }
+        
+        .school-logo {
+            font-size: 36px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            margin: 0;
+            letter-spacing: -0.5px;
+        }
+        
+        .school-subtitle {
+            font-size: 15px;
+            color: #64748B;
+            margin-top: 8px;
+            font-weight: 500;
+        }
+        
+        .connection-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1E293B;
+            margin-bottom: 8px;
+            text-align: center;
         }
         
         .connection-subtitle {
-            font-size: 16px;
+            font-size: 14px;
             color: #64748B;
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
         
         .connection-step {
@@ -444,6 +465,128 @@
             border-radius: 8px;
             font-size: 14px;
             color: #64748B;
+        }
+        
+        .method-tabs {
+            display: flex;
+            gap: 8px;
+            margin: 20px 0;
+            padding: 4px;
+            background: #F1F5F9;
+            border-radius: 12px;
+        }
+        
+        .tab-btn {
+            flex: 1;
+            padding: 12px 16px;
+            border: none;
+            background: transparent;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #64748B;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .tab-btn.active {
+            background: #FFFFFF;
+            color: #6366F1;
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15);
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 20px 0;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .qr-container {
+            text-align: center;
+            padding: 20px 0;
+        }
+        
+        #host-qr-code,
+        #answer-qr-code {
+            display: inline-block;
+            padding: 20px;
+            background: #FFFFFF;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            margin: 10px 0;
+        }
+        
+        .code-box {
+            background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+            padding: 40px;
+            border-radius: 16px;
+            margin: 20px 0;
+        }
+        
+        .code-label {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
+        .code-value {
+            font-size: 48px;
+            font-weight: 700;
+            color: #FFFFFF;
+            letter-spacing: 8px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .code-input {
+            width: 100%;
+            padding: 20px;
+            font-size: 32px;
+            text-align: center;
+            letter-spacing: 8px;
+            font-weight: 700;
+            border: 3px solid #E2E8F0;
+            border-radius: 12px;
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+        }
+        
+        .code-input:focus {
+            outline: none;
+            border-color: #6366F1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+        
+        .hint {
+            color: #64748B;
+            font-size: 14px;
+            margin-top: 12px;
+        }
+        
+        .divider {
+            margin: 30px 0;
+            text-align: center;
+            position: relative;
+        }
+        
+        .divider::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 50%;
+            height: 1px;
+            background: #E2E8F0;
+        }
+        
+        .divider span {
+            position: relative;
+            background: #FFFFFF;
+            padding: 0 16px;
+            color: #94A3B8;
+            font-size: 13px;
         }
         
         #conn-status-dot {
@@ -646,39 +789,121 @@
     <!-- Connection Panel (shown first) -->
     <div id="connection-panel" class="connection-panel">
         <div class="connection-content">
-            <h1 class="connection-title">P2P Совместная доска</h1>
-            <p class="connection-subtitle">Без регистрации, без серверов</p>
+            <!-- Branding -->
+            <div class="school-branding">
+                <h1 class="school-logo">Проект Школы 1430</h1>
+                <p class="school-subtitle">Совместная онлайн-доска без регистрации</p>
+            </div>
             
             <!-- Step 1: Choose role -->
             <div id="step-role" class="connection-step">
                 <p class="step-description">Выберите действие:</p>
                 <div class="button-group">
-                    <button class="btn btn-primary btn-large" id="create-room-btn">🏠 Создать комнату (Хост)</button>
+                    <button class="btn btn-primary btn-large" id="create-room-btn">🎨 Создать комнату</button>
                     <button class="btn btn-primary btn-large" id="join-room-btn">🔗 Присоединиться</button>
                 </div>
             </div>
             
             <!-- Step 2: Host - Share Offer -->
             <div id="step-host" class="connection-step" style="display:none">
-                <h3 class="step-title">Шаг 1: Скопируйте и отправьте это другому пользователю</h3>
-                <textarea id="offer-text" class="connection-textarea" readonly placeholder="Генерация кода подключения..."></textarea>
-                <button class="btn btn-primary" id="copy-offer">📋 Копировать</button>
+                <h3 class="connection-title">Поделитесь кодом подключения</h3>
                 
-                <h3 class="step-title" style="margin-top: 30px">Шаг 2: Вставьте ответ от другого пользователя</h3>
-                <textarea id="answer-input" class="connection-textarea" placeholder="Вставьте сюда код ответа от другого пользователя..."></textarea>
+                <!-- Method tabs -->
+                <div class="method-tabs">
+                    <button class="tab-btn active" data-tab="qr-tab">📱 QR-код</button>
+                    <button class="tab-btn" data-tab="short-tab">🔢 Короткий код</button>
+                    <button class="tab-btn" data-tab="full-tab">📄 Полный код</button>
+                </div>
+                
+                <!-- QR Tab -->
+                <div id="qr-tab" class="tab-content active">
+                    <div class="qr-container">
+                        <div id="host-qr-code"></div>
+                        <p class="hint">Отсканируйте этот QR-код с другого устройства</p>
+                    </div>
+                </div>
+                
+                <!-- Short Code Tab -->
+                <div id="short-tab" class="tab-content">
+                    <div class="code-box">
+                        <div class="code-label">Код комнаты:</div>
+                        <div class="code-value" id="host-short-code">------</div>
+                    </div>
+                    <button class="btn btn-primary" style="width: 100%" onclick="copyShortCode()">📋 Копировать код</button>
+                    <p class="hint">Продиктуйте этот код другому участнику</p>
+                </div>
+                
+                <!-- Full Code Tab -->
+                <div id="full-tab" class="tab-content">
+                    <textarea id="offer-text" class="connection-textarea" readonly placeholder="Генерация кода подключения..."></textarea>
+                    <button class="btn btn-primary" id="copy-offer">📋 Копировать</button>
+                </div>
+                
+                <div class="divider">
+                    <span>Ждём ответ от другого участника</span>
+                </div>
+                
+                <h4 class="step-title">Вставьте ответный код:</h4>
+                <textarea id="answer-input" class="connection-textarea" placeholder="Вставьте код, полученный от второго участника"></textarea>
                 <button class="btn btn-primary" id="submit-answer">✓ Подключиться</button>
             </div>
             
             <!-- Step 3: Joiner - Paste Offer, Get Answer -->
             <div id="step-joiner" class="connection-step" style="display:none">
-                <h3 class="step-title">Шаг 1: Вставьте код от хоста</h3>
-                <textarea id="offer-input" class="connection-textarea" placeholder="Вставьте сюда код от хоста..."></textarea>
-                <button class="btn btn-primary" id="process-offer">➡ Далее</button>
+                <h3 class="connection-title">Введите код от хоста</h3>
                 
-                <div id="answer-section" style="display:none">
-                    <h3 class="step-title" style="margin-top: 30px">Шаг 2: Скопируйте и отправьте это хосту</h3>
-                    <textarea id="answer-text" class="connection-textarea" readonly placeholder="Генерация ответа..."></textarea>
-                    <button class="btn btn-primary" id="copy-answer">📋 Копировать</button>
+                <!-- Method tabs -->
+                <div class="method-tabs">
+                    <button class="tab-btn active" data-tab="joiner-short-tab">🔢 Ввести код</button>
+                    <button class="tab-btn" data-tab="joiner-full-tab">📄 Вставить полный</button>
+                </div>
+                
+                <!-- Short Code Input Tab -->
+                <div id="joiner-short-tab" class="tab-content active">
+                    <input type="text" 
+                           id="short-code-input" 
+                           class="code-input" 
+                           placeholder="ABC123"
+                           maxlength="6"
+                           style="text-transform: uppercase">
+                    <button class="btn btn-primary" style="width: 100%; margin-top: 16px" onclick="processShortCode()">Далее →</button>
+                </div>
+                
+                <!-- Full Code Tab -->
+                <div id="joiner-full-tab" class="tab-content">
+                    <textarea id="offer-input" class="connection-textarea" placeholder="Вставьте полный код от хоста"></textarea>
+                    <button class="btn btn-primary" id="process-offer">Далее →</button>
+                </div>
+                
+                <!-- After processing offer, show answer -->
+                <div id="joiner-answer" style="display:none">
+                    <div class="divider">
+                        <span>Отправьте этот код хосту</span>
+                    </div>
+                    
+                    <div class="method-tabs">
+                        <button class="tab-btn active" data-tab="answer-qr-tab">📱 QR</button>
+                        <button class="tab-btn" data-tab="answer-short-tab">🔢 Код</button>
+                        <button class="tab-btn" data-tab="answer-full-tab">📄 Полный</button>
+                    </div>
+                    
+                    <div id="answer-qr-tab" class="tab-content active">
+                        <div class="qr-container">
+                            <div id="answer-qr-code"></div>
+                        </div>
+                    </div>
+                    
+                    <div id="answer-short-tab" class="tab-content">
+                        <div class="code-box">
+                            <div class="code-value" id="answer-short-code">------</div>
+                        </div>
+                        <button class="btn btn-primary" style="width: 100%" onclick="copyAnswerCode()">📋 Копировать</button>
+                    </div>
+                    
+                    <div id="answer-full-tab" class="tab-content">
+                        <textarea id="answer-text" class="connection-textarea" readonly placeholder="Генерация ответа..."></textarea>
+                        <button class="btn btn-primary" id="copy-answer">📋 Копировать</button>
+                    </div>
                 </div>
             </div>
             
@@ -778,6 +1003,116 @@
                 return v.toString(16);
             });
         }
+        
+        // Short code storage (in-memory only)
+        const shortCodeStorage = {};
+        
+        // Generate short code from connection data
+        function generateShortCode(data) {
+            const jsonString = JSON.stringify(data);
+            
+            // Create hash
+            let hash = 0;
+            for (let i = 0; i < jsonString.length; i++) {
+                const char = jsonString.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            
+            // Convert to alphanumeric (excluding confusing chars)
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let code = '';
+            let num = Math.abs(hash);
+            for (let i = 0; i < 6; i++) {
+                code += chars[num % chars.length];
+                num = Math.floor(num / chars.length);
+            }
+            
+            // Store in memory
+            shortCodeStorage[code] = jsonString;
+            
+            return code;
+        }
+        
+        // Retrieve connection data from short code
+        function getConnectionFromCode(code) {
+            const data = shortCodeStorage[code.toUpperCase()];
+            if (!data) {
+                throw new Error('Код не найден. Убедитесь, что вы находитесь на том же устройстве.');
+            }
+            return JSON.parse(data);
+        }
+        
+        // Generate QR code
+        function generateQRCode(containerId, data) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            try {
+                new QRCode(container, {
+                    text: data,
+                    width: 256,
+                    height: 256,
+                    colorDark: '#1E293B',
+                    colorLight: '#FFFFFF',
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+            } catch (error) {
+                console.error('QR code generation error:', error);
+                container.innerHTML = '<p style="color: #EF4444;">QR код недоступен</p>';
+            }
+        }
+        
+        // Tab switching functionality
+        function setupTabs() {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tabId = btn.getAttribute('data-tab');
+                    const parent = btn.closest('.connection-step');
+                    
+                    // Remove active from all tabs in this section
+                    parent.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    parent.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+                    
+                    // Add active to clicked tab
+                    btn.classList.add('active');
+                    const content = document.getElementById(tabId);
+                    if (content) content.classList.add('active');
+                });
+            });
+        }
+        
+        // Copy short code
+        window.copyShortCode = function() {
+            const code = document.getElementById('host-short-code').textContent;
+            copyToClipboard(code);
+        };
+        
+        // Copy answer code
+        window.copyAnswerCode = function() {
+            const code = document.getElementById('answer-short-code').textContent;
+            copyToClipboard(code);
+        };
+        
+        // Process short code input
+        window.processShortCode = function() {
+            const input = document.getElementById('short-code-input').value.trim().toUpperCase();
+            
+            if (input.length !== 6) {
+                showToast('Код должен состоять из 6 символов', 'warning');
+                return;
+            }
+            
+            try {
+                const connectionData = getConnectionFromCode(input);
+                document.getElementById('offer-input').value = connectionData;
+                processOffer();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        };
 
         // ============================================
         // P2P CONNECTION FUNCTIONS
@@ -849,6 +1184,14 @@
         function displayOffer() {
             const offerText = JSON.stringify(peerConnection.localDescription);
             document.getElementById('offer-text').value = offerText;
+            
+            // Generate short code
+            const shortCode = generateShortCode(peerConnection.localDescription);
+            document.getElementById('host-short-code').textContent = shortCode;
+            
+            // Generate QR codes
+            generateQRCode('host-qr-code', shortCode);
+            
             showToast('Код готов! Отправьте его другому пользователю', 'info');
         }
         
@@ -908,6 +1251,17 @@
         function displayAnswer() {
             const answerText = JSON.stringify(peerConnection.localDescription);
             document.getElementById('answer-text').value = answerText;
+            
+            // Generate short code
+            const shortCode = generateShortCode(peerConnection.localDescription);
+            document.getElementById('answer-short-code').textContent = shortCode;
+            
+            // Generate QR code
+            generateQRCode('answer-qr-code', shortCode);
+            
+            // Show answer section
+            document.getElementById('joiner-answer').style.display = 'block';
+            
             showToast('Код готов! Отправьте его хосту', 'info');
             updateConnectionStatus('connecting');
         }
@@ -1827,6 +2181,9 @@
         // ============================================
         // INITIALIZE APPLICATION
         // ============================================
+        
+        // Setup tab switching
+        setupTabs();
         
         console.log('P2P Collaborative Whiteboard initialized');
         console.log('User ID:', state.userId);
