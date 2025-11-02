@@ -2,96 +2,2601 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>P2P Чат - Безопасное общение</title>
-    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Совместная доска - Школа 1430</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            overflow: hidden;
+            background: #F8FAFC;
+        }
+
+        .toolbar {
+            background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            flex-wrap: wrap;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        .toolbar-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .toolbar-separator {
+            width: 1px;
+            height: 32px;
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .logo {
+            font-weight: 700;
+            font-size: 20px;
+            color: #FFFFFF;
+            letter-spacing: -0.02em;
+        }
+
+        .room-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 8px 14px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .room-label {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.85);
+            font-weight: 500;
+        }
+
+        .room-id {
+            font-family: monospace;
+            font-weight: 600;
+            color: #FFFFFF;
+            font-size: 15px;
+            letter-spacing: 0.5px;
+        }
+
+        .btn {
+            padding: 9px 18px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: rgba(255, 255, 255, 0.95);
+            color: #1E293B;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .btn:hover {
+            background: #FFFFFF;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .btn-primary {
+            background: #06B6D4;
+            color: white;
+            border: none;
+            box-shadow: 0 2px 4px rgba(6, 182, 212, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: #0891B2;
+            box-shadow: 0 4px 12px rgba(6, 182, 212, 0.4);
+        }
+
+        .btn-danger {
+            background: #EF4444;
+            color: white;
+            border: none;
+            box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-danger:hover {
+            background: #DC2626;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+        }
+
+        .mode-toggle {
+            display: flex;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            padding: 4px;
+            backdrop-filter: blur(10px);
+        }
+
+        .mode-btn {
+            padding: 8px 20px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.7);
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .mode-btn:hover {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .mode-btn.active {
+            background: rgba(255, 255, 255, 0.95);
+            color: #6366F1;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .color-picker {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .color-option {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+        }
+
+        .color-option:hover {
+            transform: scale(1.15);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.25);
+        }
+
+        .color-option.active {
+            border: 3px solid #FFFFFF;
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.4), 0 4px 12px rgba(0,0,0,0.3);
+            transform: scale(1.1);
+        }
+
+        .size-picker {
+            display: flex;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 4px;
+            border-radius: 8px;
+        }
+
+        .size-option {
+            padding: 7px 16px;
+            border: none;
+            background: transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .size-option:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .size-option.active {
+            background: rgba(255, 255, 255, 0.95);
+            color: #6366F1;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            height: calc(100vh - 80px);
+            background: #FAFAFA;
+            overflow: hidden;
+        }
+
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            cursor: crosshair;
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 0;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            touch-action: none;
+        }
+
+        .text-box {
+            position: absolute;
+            padding: 10px;
+            border: 2px dashed transparent;
+            cursor: move;
+            min-width: 100px;
+            word-wrap: break-word;
+            transition: all 0.2s ease;
+            border-radius: 6px;
+        }
+
+        .text-box:hover {
+            border-color: #06B6D4;
+            background: rgba(6, 182, 212, 0.05);
+        }
+
+        .text-box.editing {
+            border-color: #6366F1;
+            border-style: solid;
+            background: rgba(99, 102, 241, 0.05);
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
+        }
+
+        .text-input {
+            border: none;
+            outline: none;
+            background: transparent;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            width: 100%;
+            min-width: 200px;
+        }
+
+        .text-delete {
+            position: absolute;
+            top: -12px;
+            right: -12px;
+            width: 28px;
+            height: 28px;
+            background: #EF4444;
+            color: white;
+            border: 2px solid white;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            line-height: 1;
+            display: none;
+            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+            transition: all 0.2s ease;
+        }
+
+        .text-delete:hover {
+            background: #DC2626;
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.5);
+        }
+
+        .text-box:hover .text-delete {
+            display: block;
+        }
+
+        .notification {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #1E293B;
+            color: white;
+            padding: 14px 24px;
+            border-radius: 10px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+            animation: slideIn 0.3s ease;
+            z-index: 1000;
+            font-size: 14px;
+            font-weight: 500;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 8px 14px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.95);
+            font-weight: 500;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10B981;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .status-dot.error {
+            background: #EF4444;
+        }
+        
+        .connection-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(30, 41, 59, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            backdrop-filter: blur(10px);
+        }
+        
+        .connection-content {
+            background: #FFFFFF;
+            max-width: 600px;
+            width: 90%;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        .school-branding {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px 0;
+        }
+        
+        .school-logo {
+            font-size: 36px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 0;
+            letter-spacing: -0.5px;
+        }
+        
+        .school-subtitle {
+            font-size: 15px;
+            color: #64748B;
+            margin-top: 8px;
+            font-weight: 500;
+        }
+        
+        .connection-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1E293B;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+        
+        .connection-subtitle {
+            font-size: 14px;
+            color: #64748B;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .connection-step {
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .step-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1E293B;
+            margin-bottom: 12px;
+        }
+        
+        .step-description {
+            font-size: 15px;
+            color: #64748B;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+        
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .btn-large {
+            padding: 16px 24px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .connection-textarea {
+            width: 100%;
+            min-height: 120px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            padding: 12px;
+            border: 2px solid #E2E8F0;
+            border-radius: 8px;
+            resize: vertical;
+            margin-bottom: 12px;
+            background: #F8FAFC;
+            color: #1E293B;
+        }
+        
+        .connection-textarea:focus {
+            outline: none;
+            border-color: #6366F1;
+            background: #FFFFFF;
+        }
+        
+        .connection-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 24px;
+            padding: 12px;
+            background: #F8FAFC;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #64748B;
+        }
+        
+        .method-tabs {
+            display: flex;
+            gap: 8px;
+            margin: 20px 0;
+            padding: 4px;
+            background: #F1F5F9;
+            border-radius: 12px;
+        }
+        
+        .tab-btn {
+            flex: 1;
+            padding: 12px 16px;
+            border: none;
+            background: transparent;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #64748B;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .tab-btn.active {
+            background: #FFFFFF;
+            color: #6366F1;
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15);
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 20px 0;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .qr-container {
+            text-align: center;
+            padding: 20px 0;
+        }
+        
+        #host-qr-code,
+        #answer-qr-code {
+            display: inline-block;
+            padding: 20px;
+            background: #FFFFFF;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            margin: 10px 0;
+        }
+        
+        .code-box {
+            background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+            padding: 40px;
+            border-radius: 16px;
+            margin: 20px 0;
+        }
+        
+        .code-label {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
+        .code-value {
+            font-size: 48px;
+            font-weight: 700;
+            color: #FFFFFF;
+            letter-spacing: 8px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .code-input {
+            width: 100%;
+            padding: 20px;
+            font-size: 32px;
+            text-align: center;
+            letter-spacing: 8px;
+            font-weight: 700;
+            border: 3px solid #E2E8F0;
+            border-radius: 12px;
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+        }
+        
+        .code-input:focus {
+            outline: none;
+            border-color: #6366F1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+        
+        .hint {
+            color: #64748B;
+            font-size: 14px;
+            margin-top: 12px;
+        }
+        
+        .divider {
+            margin: 30px 0;
+            text-align: center;
+            position: relative;
+        }
+        
+        .divider::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 50%;
+            height: 1px;
+            background: #E2E8F0;
+        }
+        
+        .divider span {
+            position: relative;
+            background: #FFFFFF;
+            padding: 0 16px;
+            color: #94A3B8;
+            font-size: 13px;
+        }
+        
+        #conn-status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #94A3B8;
+        }
+        
+        #conn-status-dot.connecting {
+            background: #FBBF24;
+            animation: pulse 1.5s infinite;
+        }
+        
+        #conn-status-dot.connected {
+            background: #10B981;
+        }
+
+        .mode-selector {
+            max-width: 600px;
+            margin: 60px auto;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .mode-selector h3 {
+            font-size: 24px;
+            color: #1E293B;
+            margin-bottom: 30px;
+        }
+
+        .mode-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        @media (max-width: 600px) {
+            .mode-buttons {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .mode-btn-card {
+            padding: 30px 20px;
+            border: 3px solid #E2E8F0;
+            background: #FFFFFF;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .mode-btn-card:hover {
+            border-color: #6366F1;
+            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.15);
+            transform: translateY(-4px);
+        }
+
+        .mode-btn-card .icon {
+            font-size: 48px;
+        }
+
+        .mode-btn-card .title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1E293B;
+        }
+
+        .mode-btn-card .subtitle {
+            font-size: 13px;
+            color: #94A3B8;
+        }
+
+        .standalone-header {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #F0F9FF 0%, #F5F3FF 100%);
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .standalone-header h2 {
+            color: #1E293B;
+            margin: 0 0 8px 0;
+        }
+
+        .standalone-header p {
+            color: #64748B;
+            margin: 0;
+            font-size: 14px;
+        }
+
+        .progress-container {
+            margin: 20px 0;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #E2E8F0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #6366F1, #8B5CF6, #EC4899);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        #progress-text {
+            font-size: 14px;
+            color: #64748B;
+            margin-top: 8px;
+            text-align: center;
+        }
+
+        .error-banner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #FEE2E2;
+            border-bottom: 3px solid #EF4444;
+            padding: 16px 20px;
+            color: #991B1B;
+            font-weight: 500;
+            display: none;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10000;
+        }
+
+        .error-banner button {
+            background: none;
+            border: none;
+            color: #991B1B;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(100px) scale(0.8);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1E293B;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+            animation: slideUp 0.3s ease;
+            z-index: 1000;
+            font-size: 14px;
+            font-weight: 500;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 200px;
+            justify-content: center;
+        }
+        
+        .toast-icon {
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .toast-success {
+            background: #10B981;
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .toast-error {
+            background: #EF4444;
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .toast-warning {
+            background: #FBBF24;
+            color: #1E293B;
+            border-color: rgba(0, 0, 0, 0.1);
+        }
+        
+        .toast-info {
+            background: #3B82F6;
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .toast.fade-out {
+            animation: slideDown 0.3s ease forwards;
+        }
+        
+        @keyframes slideUp {
+            from {
+                transform: translate(-50%, 100px);
+                opacity: 0;
+            }
+            to {
+                transform: translate(-50%, 0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideDown {
+            from {
+                transform: translate(-50%, 0);
+                opacity: 1;
+            }
+            to {
+                transform: translate(-50%, 100px);
+                opacity: 0;
+            }
+        }
+
+        .label {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.85);
+            font-weight: 500;
+            margin-right: 4px;
+        }
+
+        #eraserBtn.active {
+            background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+            color: white;
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+        }
+
+        .warning-banner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #FDD835;
+            color: #1E293B;
+            padding: 12px;
+            text-align: center;
+            z-index: 10000;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        /* Mobile-first responsive design */
+        @media (max-width: 768px) {
+            .toolbar {
+                flex-wrap: wrap;
+                padding: 10px;
+                gap: 10px;
+            }
+
+            .toolbar-separator {
+                display: none;
+            }
+
+            /* Larger touch targets - minimum 44x44px */
+            .btn,
+            .mode-btn,
+            .size-option {
+                min-width: 44px;
+                min-height: 44px;
+                padding: 10px 14px;
+                font-size: 13px;
+            }
+
+            /* Larger color circles for easier tapping */
+            .color-option {
+                width: 40px;
+                height: 40px;
+                margin: 2px;
+            }
+
+            .logo {
+                font-size: 16px;
+            }
+            
+            .toolbar-section {
+                gap: 8px;
+            }
+            
+            .room-info {
+                font-size: 12px;
+                padding: 6px 10px;
+            }
+            
+            .room-id {
+                font-size: 13px;
+            }
+        }
+        
+        /* Stack controls vertically on very small screens */
+        @media (max-width: 480px) {
+            .toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .toolbar-section {
+                width: 100%;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+            
+            .btn {
+                flex: 1;
+                min-width: 100px;
+            }
+        }
+    </style>
 </head>
 <body>
-    <!-- Welcome Screen -->
-    <div id="welcomeScreen" class="screen active">
-        <div class="container">
-            <div class="card">
-                <h1 class="title">P2P Чат</h1>
-                <p class="subtitle">Безопасное общение прямым каналом</p>
-                
-                <button id="createRoomBtn" class="btn btn-primary">Создать комнату</button>
-                
-                <div class="divider">или</div>
-                
-                <div class="join-section">
-                    <input 
-                        type="text" 
-                        id="roomCodeInput" 
-                        class="input" 
-                        placeholder="Введите код комнаты"
-                    >
-                    <button id="joinRoomBtn" class="btn btn-secondary">Присоединиться</button>
-                    <p class="info-text">Введите 6-значный код комнаты</p>
-                </div>
-                
-                <div id="errorMessage" class="error-message"></div>
-            </div>
-        </div>
+    <!-- Error Banner -->
+    <div id="error-banner" class="error-banner">
+        <span id="error-message"></span>
+        <button onclick="closeError()">✕</button>
     </div>
 
-    <!-- Room Created Screen -->
-    <div id="roomCreatedScreen" class="screen">
-        <div class="container">
-            <div class="card">
-                <h2 class="title">Ваша комната создана</h2>
-                
-                <div class="room-code-section">
-                    <p class="label">Код для приглашения:</p>
-                    <div class="room-code" id="displayRoomCode"></div>
-                    <button id="copyCodeBtn" class="btn btn-copy">📋 Скопировать</button>
-                    <p class="info">Поделитесь этим кодом для общения</p>
-                </div>
-                
-                <div class="status-section">
-                    <p class="status-text">Ожидание подключения...</p>
-                    <div class="spinner"></div>
-
+    <!-- Mode Selector (shown first) -->
+    <div id="mode-selector" class="connection-panel">
+        <div class="connection-content">
+            <div class="school-branding">
+                <h1 class="school-logo">Проект Школы 1430</h1>
+                <p class="school-subtitle">Совместная онлайн-доска</p>
+            </div>
+            <div class="mode-selector">
+                <h3>Выберите режим:</h3>
+                <div class="mode-buttons">
+                    <button class="mode-btn-card" id="collaborative-mode">
+                        <span class="icon">🔗</span>
+                        <span class="title">Совместная доска</span>
+                        <span class="subtitle">Рисуем вместе</span>
+                    </button>
+                    <button class="mode-btn-card" id="standalone-mode">
+                        <span class="icon">✏️</span>
+                        <span class="title">Самостоятельная работа</span>
+                        <span class="subtitle">Только я рисую</span>
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Chat Screen -->
-    <div id="chatScreen" class="screen">
-        <div class="chat-container">
-            <div class="chat-header">
-                <div class="header-left">
-                    <h3>P2P Чат</h3>
-                    <div class="room-info">Комната: <span id="chatRoomCode"></span></div>
+    <!-- Standalone Panel -->
+    <div id="standalone-panel" class="connection-panel" style="display:none">
+        <div class="connection-content">
+            <div class="standalone-header">
+                <h2>📝 Самостоятельная доска</h2>
+                <p>Вы можете рисовать и работать без интернета</p>
+            </div>
+            <button class="btn btn-primary btn-large" style="width: 100%" onclick="startStandaloneMode()">Начать рисовать</button>
+        </div>
+    </div>
+
+    <!-- Connection Panel -->
+    <div id="connection-panel" class="connection-panel" style="display:none">
+        <div class="connection-content">
+            <!-- Branding -->
+            <div class="school-branding">
+                <h1 class="school-logo">Проект Школы 1430</h1>
+                <p class="school-subtitle">Совместная онлайн-доска без регистрации</p>
+            </div>
+            
+            <!-- Step 1: Choose role -->
+            <div id="step-role" class="connection-step">
+                <p class="step-description">Выберите действие:</p>
+                <div class="button-group">
+                    <button class="btn btn-primary btn-large" id="create-room-btn">🎨 Создать комнату</button>
+                    <button class="btn btn-primary btn-large" id="join-room-btn">🔗 Присоединиться</button>
                 </div>
-                <div class="header-right">
-                    <div class="connection-status" id="connectionStatus">
-                        <span class="status-dot"></span>
-                        <span class="status-text">Подключение...</span>
+            </div>
+            
+            <!-- Step 2: Host - Share Offer -->
+            <div id="step-host" class="connection-step" style="display:none">
+                <h3 class="connection-title">Поделитесь кодом подключения</h3>
+                
+                <!-- Method tabs -->
+                <div class="method-tabs">
+                    <button class="tab-btn active" data-tab="qr-tab">📱 QR-код</button>
+                    <button class="tab-btn" data-tab="short-tab">🔢 Короткий код</button>
+                    <button class="tab-btn" data-tab="full-tab">📄 Полный код</button>
+                </div>
+                
+                <!-- QR Tab -->
+                <div id="qr-tab" class="tab-content active">
+                    <div class="qr-container">
+                        <div id="host-qr-code"></div>
+                        <p class="hint">Отсканируйте этот QR-код с другого устройства</p>
+                    </div>
+                </div>
+                
+                <!-- Short Code Tab -->
+                <div id="short-tab" class="tab-content">
+                    <div class="code-box">
+                        <div class="code-label">Код комнаты:</div>
+                        <div class="code-value" id="host-short-code">------</div>
+                    </div>
+                    <button class="btn btn-primary" style="width: 100%" onclick="copyShortCode()">📋 Копировать код</button>
+                    <p class="hint">Продиктуйте этот код другому участнику</p>
+                </div>
+                
+                <!-- Full Code Tab -->
+                <div id="full-tab" class="tab-content">
+                    <textarea id="offer-text" class="connection-textarea" readonly placeholder="Генерация кода подключения..."></textarea>
+                    <button class="btn btn-primary" id="copy-offer">📋 Копировать</button>
+                </div>
+                
+                <div class="divider">
+                    <span>Ждём ответ от другого участника</span>
+                </div>
+                
+                <h4 class="step-title">Вставьте ответный код:</h4>
+                <textarea id="answer-input" class="connection-textarea" placeholder="Вставьте код, полученный от второго участника"></textarea>
+                <button class="btn btn-primary" id="submit-answer">✓ Подключиться</button>
+            </div>
+            
+            <!-- Step 3: Joiner - Paste Offer, Get Answer -->
+            <div id="step-joiner" class="connection-step" style="display:none">
+                <h3 class="connection-title">Введите код от хоста</h3>
+                
+                <!-- Method tabs -->
+                <div class="method-tabs">
+                    <button class="tab-btn active" data-tab="joiner-short-tab">🔢 Ввести код</button>
+                    <button class="tab-btn" data-tab="joiner-full-tab">📄 Вставить полный</button>
+                </div>
+                
+                <!-- Short Code Input Tab -->
+                <div id="joiner-short-tab" class="tab-content active">
+                    <input type="text" 
+                           id="short-code-input" 
+                           class="code-input" 
+                           placeholder="ABC123"
+                           maxlength="6"
+                           style="text-transform: uppercase">
+                    <button class="btn btn-primary" style="width: 100%; margin-top: 16px" onclick="processShortCode()">Далее →</button>
+                </div>
+                
+                <!-- Full Code Tab -->
+                <div id="joiner-full-tab" class="tab-content">
+                    <textarea id="offer-input" class="connection-textarea" placeholder="Вставьте полный код от хоста"></textarea>
+                    <button class="btn btn-primary" id="process-offer">Далее →</button>
+                </div>
+                
+                <!-- After processing offer, show answer -->
+                <div id="joiner-answer" style="display:none">
+                    <div class="divider">
+                        <span>Отправьте этот код хосту</span>
+                    </div>
+                    
+                    <div class="method-tabs">
+                        <button class="tab-btn active" data-tab="answer-qr-tab">📱 QR</button>
+                        <button class="tab-btn" data-tab="answer-short-tab">🔢 Код</button>
+                        <button class="tab-btn" data-tab="answer-full-tab">📄 Полный</button>
+                    </div>
+                    
+                    <div id="answer-qr-tab" class="tab-content active">
+                        <div class="qr-container">
+                            <div id="answer-qr-code"></div>
+                        </div>
+                    </div>
+                    
+                    <div id="answer-short-tab" class="tab-content">
+                        <div class="code-box">
+                            <div class="code-value" id="answer-short-code">------</div>
+                        </div>
+                        <button class="btn btn-primary" style="width: 100%" onclick="copyAnswerCode()">📋 Копировать</button>
+                    </div>
+                    
+                    <div id="answer-full-tab" class="tab-content">
+                        <textarea id="answer-text" class="connection-textarea" readonly placeholder="Генерация ответа..."></textarea>
+                        <button class="btn btn-primary" id="copy-answer">📋 Копировать</button>
                     </div>
                 </div>
             </div>
             
-            <div class="messages-container" id="messagesContainer">
-                <!-- Messages will be dynamically added here -->
+            <div id="connection-progress" class="progress-container" style="display:none">
+                <div class="progress-bar">
+                    <div id="progress-fill" class="progress-fill"></div>
+                </div>
+                <p id="progress-text">Подключение...</p>
             </div>
             
-            <div class="input-area">
-                <input 
-                    type="text" 
-                    id="messageInput" 
-                    class="message-input" 
-                    placeholder="Введите сообщение..."
-                >
-                <button id="sendMessageBtn" class="btn btn-send">Отправить</button>
-            </div>
-            
-            <div class="footer-actions">
-                <button id="leaveRoomBtn" class="btn btn-leave">Выход</button>
+            <div id="connection-status" class="connection-status">
+                <span class="status-dot" id="conn-status-dot"></span>
+                <span id="status-text">Не подключено</span>
             </div>
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <div class="toolbar" id="main-toolbar" style="display:none">
+        <div class="toolbar-section">
+            <div class="logo">Школа 1430</div>
+        </div>
+
+        <div class="toolbar-separator"></div>
+
+        <div class="toolbar-section status-indicator">
+            <span class="status-dot" id="statusDot"></span>
+            <span id="userCount">2 участника онлайн</span>
+        </div>
+
+        <div class="toolbar-separator"></div>
+
+        <div class="toolbar-section">
+            <div class="mode-toggle">
+                <button class="mode-btn active" data-mode="draw">📝 Рисование</button>
+                <button class="mode-btn" data-mode="text">📄 Текст</button>
+            </div>
+        </div>
+
+        <div class="toolbar-separator"></div>
+
+        <div class="toolbar-section" id="drawTools">
+            <span class="label">Цвет:</span>
+            <div class="color-picker" id="colorPicker"></div>
+            <span class="label">Размер:</span>
+            <div class="size-picker" id="brushSizePicker">
+                <button class="size-option" data-size="2">Тонкий</button>
+                <button class="size-option active" data-size="5">Средний</button>
+                <button class="size-option" data-size="10">Толстый</button>
+            </div>
+            <button class="btn" id="eraserBtn">Ластик</button>
+        </div>
+
+        <div class="toolbar-section" id="textTools" style="display: none;">
+            <span class="label">Цвет:</span>
+            <div class="color-picker" id="textColorPicker"></div>
+            <span class="label">Размер:</span>
+            <div class="size-picker" id="textSizePicker">
+                <button class="size-option" data-size="14px">Маленький</button>
+                <button class="size-option active" data-size="20px">Средний</button>
+                <button class="size-option" data-size="28px">Большой</button>
+            </div>
+        </div>
+
+        <div class="toolbar-separator"></div>
+
+        <div class="toolbar-section">
+            <button class="btn btn-danger" id="clearBtn">Очистить</button>
+            <button class="btn" id="saveBtn">Сохранить</button>
+        </div>
+
+        <div class="toolbar-separator"></div>
+    </div>
+
+    <div class="canvas-container" id="canvasContainer">
+        <canvas id="canvas"></canvas>
+    </div>
+
+    <script>
+        // ============================================
+        // WEBRTC P2P CONNECTION
+        // ============================================
+        
+        let peerConnection = null;
+        let dataChannel = null;
+        let isInitiator = false;
+        let heartbeatInterval = null;
+        
+        const rtcConfiguration = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' },
+                { urls: 'stun:stun.cloudflare.com:3478' },
+                { urls: 'stun:global.stun.twilio.com:3478' }
+            ],
+            bundlePolicy: 'max-bundle',
+            rtcpMuxPolicy: 'require',
+            iceCandidatePoolSize: 0
+        };
+        
+        // ============================================
+        // UTILITY FUNCTIONS
+        // ============================================
+        
+        // Trickle ICE candidates tracking
+        let candidateCount = 0;
+        let iceGatheringComplete = false;
+        let pendingCandidates = [];
+        
+        // SDP Compression with pako
+        function compressSDP(data) {
+            try {
+                const json = JSON.stringify(data);
+                const bytes = new TextEncoder().encode(json);
+                const compressed = pako.deflate(bytes);
+                return btoa(String.fromCharCode(...compressed));
+            } catch (error) {
+                console.error('Compression error:', error);
+                throw new Error('Не удалось сжать данные');
+            }
+        }
+        
+        function decompressSDP(compressed) {
+            try {
+                const binary = atob(compressed);
+                const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+                const decompressed = pako.inflate(bytes);
+                const json = new TextDecoder().decode(decompressed);
+                return JSON.parse(json);
+            } catch (error) {
+                console.error('Decompression error:', error);
+                throw new Error('Неверный формат данных');
+            }
+        }
+        
+        // Error display
+        function showError(message) {
+            const banner = document.getElementById('error-banner');
+            document.getElementById('error-message').textContent = message;
+            banner.style.display = 'flex';
+            
+            setTimeout(() => {
+                banner.style.display = 'none';
+            }, 5000);
+        }
+        
+        window.closeError = function() {
+            document.getElementById('error-banner').style.display = 'none';
+        };
+        
+        // Progress tracking
+        function updateProgress(percentage, text) {
+            const fill = document.getElementById('progress-fill');
+            const progressText = document.getElementById('progress-text');
+            if (fill) fill.style.width = percentage + '%';
+            if (progressText) progressText.textContent = text;
+        }
+        
+        function showProgress() {
+            const container = document.getElementById('connection-progress');
+            if (container) container.style.display = 'block';
+            updateProgress(0, 'Инициализация...');
+        }
+        
+        function hideProgress() {
+            const container = document.getElementById('connection-progress');
+            if (container) container.style.display = 'none';
+        }
+        
+        // Generate UUID v4
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+        
+        // Short code storage (in-memory only)
+        const shortCodeStorage = {};
+        const VALID_SHORT_CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        
+        // Generate short code with checksum
+        function generateShortCode(data) {
+            const jsonString = JSON.stringify(data);
+            
+            // Create hash
+            let hash = 0;
+            for (let i = 0; i < jsonString.length; i++) {
+                const char = jsonString.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            
+            // Convert to alphanumeric (excluding confusing chars)
+            let code = '';
+            let num = Math.abs(hash);
+            for (let i = 0; i < 6; i++) {
+                code += VALID_SHORT_CODE_CHARS[num % VALID_SHORT_CODE_CHARS.length];
+                num = Math.floor(num / VALID_SHORT_CODE_CHARS.length);
+            }
+            
+            // Store with metadata
+            shortCodeStorage[code] = {
+                data: jsonString,
+                checksum: Math.abs(hash) % 256,
+                timestamp: Date.now()
+            };
+            
+            return code;
+        }
+        
+        // Validate and retrieve short code
+        function getConnectionFromCode(code) {
+            code = code.toUpperCase().trim();
+            
+            // Check format
+            if (!/^[A-Z2-9]{6}$/.test(code)) {
+                throw new Error('Неверный формат кода. Используйте 6 букв или цифр.');
+            }
+            
+            // Check if exists
+            const stored = shortCodeStorage[code];
+            if (!stored) {
+                throw new Error('Код не найден. Проверьте, что вы вводите правильный код.');
+            }
+            
+            // Check timeout (5 minutes)
+            if (Date.now() - stored.timestamp > 5 * 60 * 1000) {
+                delete shortCodeStorage[code];
+                throw new Error('Код истёк (5 минут). Создайте новый.');
+            }
+            
+            return JSON.parse(stored.data);
+        }
+        
+        // Generate QR code with validation
+        function generateQRCode(containerId, data) {
+            const container = document.getElementById(containerId);
+            if (!container) return false;
+            
+            container.innerHTML = '';
+            
+            try {
+                // Compress data
+                const compressed = compressSDP(data);
+                
+                // Test decompression
+                const test = decompressSDP(compressed);
+                if (!test.type || !test.sdp) {
+                    throw new Error('Неверная структура данных');
+                }
+                
+                // Check size (QR code limit)
+                if (compressed.length > 2900) {
+                    showError('Данные слишком большие для QR кода');
+                    return false;
+                }
+                
+                new QRCode(container, {
+                    text: compressed,
+                    width: 256,
+                    height: 256,
+                    colorDark: '#1E293B',
+                    colorLight: '#FFFFFF',
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+                
+                return true;
+            } catch (error) {
+                console.error('QR code generation error:', error);
+                container.innerHTML = '<p style="color: #EF4444; font-size: 14px;">Ошибка QR: ' + error.message + '</p>';
+                return false;
+            }
+        }
+        
+        // Validate QR input
+        function validateQRInput(qrData) {
+            try {
+                const decompressed = decompressSDP(qrData);
+                
+                if (!decompressed.type || !decompressed.sdp) {
+                    throw new Error('Неверная структура QR данных');
+                }
+                
+                return decompressed;
+            } catch (error) {
+                throw new Error('Ошибка при обработке QR: ' + error.message);
+            }
+        }
+        
+        // Tab switching functionality
+        function setupTabs() {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tabId = btn.getAttribute('data-tab');
+                    const parent = btn.closest('.connection-step');
+                    
+                    // Remove active from all tabs in this section
+                    parent.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    parent.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+                    
+                    // Add active to clicked tab
+                    btn.classList.add('active');
+                    const content = document.getElementById(tabId);
+                    if (content) content.classList.add('active');
+                });
+            });
+        }
+        
+        // Copy short code
+        window.copyShortCode = function() {
+            const code = document.getElementById('host-short-code').textContent;
+            copyToClipboard(code);
+        };
+        
+        // Copy answer code
+        window.copyAnswerCode = function() {
+            const code = document.getElementById('answer-short-code').textContent;
+            copyToClipboard(code);
+        };
+        
+        // Process short code input
+        window.processShortCode = function() {
+            const input = document.getElementById('short-code-input').value.trim().toUpperCase();
+            
+            try {
+                const connectionData = getConnectionFromCode(input);
+                document.getElementById('offer-input').value = JSON.stringify(connectionData);
+                processOffer();
+            } catch (error) {
+                showError(error.message);
+            }
+        };
+
+        // ============================================
+        // P2P CONNECTION FUNCTIONS
+        // ============================================
+        
+        function createPeerConnection() {
+            peerConnection = new RTCPeerConnection(rtcConfiguration);
+            candidateCount = 0;
+            iceGatheringComplete = false;
+            
+            // Trickle ICE - send candidates immediately
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate) {
+                    // Send candidate immediately (trickle)
+                    candidateCount++;
+                    const progress = Math.min((candidateCount * 10), 80);
+                    updateProgress(progress, `Поиск путей соединения... (${candidateCount})`);
+                    
+                    // Store candidate for potential retry
+                    pendingCandidates.push(event.candidate);
+                } else if (!iceGatheringComplete) {
+                    // ICE gathering complete
+                    iceGatheringComplete = true;
+                    updateProgress(90, 'Завершение подготовки...');
+                    
+                    if (isInitiator) {
+                        displayOffer();
+                    } else {
+                        displayAnswer();
+                    }
+                }
+            };
+            
+            // Connection state monitoring (aggressive nomination)
+            peerConnection.onconnectionstatechange = () => {
+                console.log('Connection state:', peerConnection.connectionState);
+                updateConnectionStatus(peerConnection.connectionState);
+                
+                // Start using connection as soon as first candidate works
+                if (peerConnection.connectionState === 'connected') {
+                    updateProgress(100, '✓ Подключено!');
+                    hideProgress();
+                    showCanvas();
+                    startP2PHeartbeat();
+                    showToast('✓ Подключено к другому пользователю', 'success');
+                }
+                
+                if (peerConnection.connectionState === 'failed') {
+                    showError('✗ Не удалось подключиться. Попробуйте снова.');
+                    hideProgress();
+                }
+                
+                if (peerConnection.connectionState === 'disconnected') {
+                    showToast('✗ Соединение потеряно', 'error');
+                }
+            };
+            
+            // Data channel events (for joiner)
+            peerConnection.ondatachannel = (event) => {
+                dataChannel = event.channel;
+                setupDataChannel();
+            };
+            
+            return peerConnection;
+        }
+        
+        async function createRoom() {
+            isInitiator = true;
+            document.getElementById('step-role').style.display = 'none';
+            document.getElementById('step-host').style.display = 'block';
+            
+            showProgress();
+            updateProgress(10, 'Создание комнаты...');
+            
+            try {
+                createPeerConnection();
+                
+                updateProgress(30, 'Настройка канала данных...');
+                
+                // Create data channel
+                dataChannel = peerConnection.createDataChannel('drawing');
+                setupDataChannel();
+                
+                updateProgress(50, 'Генерация кодов подключения...');
+                
+                // Create offer
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+                
+                // Wait for ICE gathering (onicecandidate will display when complete)
+            } catch (error) {
+                console.error('Error creating offer:', error);
+                showError('Ошибка создания комнаты: ' + error.message);
+                hideProgress();
+            }
+        }
+        
+        function displayOffer() {
+            try {
+                const offerData = peerConnection.localDescription;
+                
+                // Compress for full code
+                const compressed = compressSDP(offerData);
+                document.getElementById('offer-text').value = compressed;
+                
+                // Generate short code
+                const shortCode = generateShortCode(offerData);
+                document.getElementById('host-short-code').textContent = shortCode;
+                
+                // Generate QR code with compressed data
+                generateQRCode('host-qr-code', offerData);
+                
+                updateProgress(95, '✓ Коды готовы! Ожидание подключения...');
+                showToast('Код готов! Отправьте его другому пользователю', 'info');
+            } catch (error) {
+                showError('Ошибка при генерации кодов: ' + error.message);
+                hideProgress();
+            }
+        }
+        
+        async function processAnswer() {
+            const answerText = document.getElementById('answer-input').value.trim();
+            if (!answerText) {
+                showToast('Вставьте ответ от другого пользователя', 'warning');
+                return;
+            }
+            
+            try {
+                // Try to decompress first
+                let answer;
+                try {
+                    answer = decompressSDP(answerText);
+                } catch (e) {
+                    // Fallback to plain JSON
+                    answer = JSON.parse(answerText);
+                }
+                
+                if (!answer.type || !answer.sdp) {
+                    throw new Error('Неверная структура ответа');
+                }
+                
+                showProgress();
+                updateProgress(80, 'Подключение...');
+                
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+                document.getElementById('step-host').style.display = 'none';
+                updateConnectionStatus('connecting');
+            } catch (error) {
+                console.error('Error processing answer:', error);
+                showError('Ошибка: ' + error.message);
+            }
+        }
+        
+        async function joinRoom() {
+            isInitiator = false;
+            document.getElementById('step-role').style.display = 'none';
+            document.getElementById('step-joiner').style.display = 'block';
+        }
+        
+        async function processOffer() {
+            const offerText = document.getElementById('offer-input').value.trim();
+            if (!offerText) {
+                showToast('Вставьте код от хоста', 'warning');
+                return;
+            }
+            
+            try {
+                showProgress();
+                updateProgress(20, 'Обработка кода...');
+                
+                // Try to decompress first
+                let offer;
+                try {
+                    offer = decompressSDP(offerText);
+                } catch (e) {
+                    // Fallback to plain JSON
+                    offer = JSON.parse(offerText);
+                }
+                
+                if (!offer.type || !offer.sdp) {
+                    throw new Error('Неверная структура кода');
+                }
+                
+                updateProgress(40, 'Создание подключения...');
+                
+                createPeerConnection();
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+                
+                updateProgress(60, 'Генерация ответа...');
+                
+                // Create answer
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+                
+                // Show answer section
+                document.getElementById('offer-input').style.display = 'none';
+                document.getElementById('process-offer').style.display = 'none';
+                
+                // Wait for ICE gathering
+            } catch (error) {
+                console.error('Error processing offer:', error);
+                showError('Ошибка: ' + error.message);
+                hideProgress();
+            }
+        }
+        
+        function displayAnswer() {
+            try {
+                const answerData = peerConnection.localDescription;
+                
+                // Compress for full code
+                const compressed = compressSDP(answerData);
+                document.getElementById('answer-text').value = compressed;
+                
+                // Generate short code
+                const shortCode = generateShortCode(answerData);
+                document.getElementById('answer-short-code').textContent = shortCode;
+                
+                // Generate QR code with compressed data
+                generateQRCode('answer-qr-code', answerData);
+                
+                // Show answer section
+                document.getElementById('joiner-answer').style.display = 'block';
+                
+                updateProgress(95, '✓ Код готов! Ожидание подключения...');
+                showToast('Код готов! Отправьте его хосту', 'info');
+                updateConnectionStatus('connecting');
+            } catch (error) {
+                showError('Ошибка при генерации ответа: ' + error.message);
+                hideProgress();
+            }
+        }
+        
+        function setupDataChannel() {
+            dataChannel.onopen = () => {
+                console.log('Data channel opened');
+                updateConnectionStatus('connected');
+            };
+            
+            dataChannel.onclose = () => {
+                console.log('Data channel closed');
+                updateConnectionStatus('disconnected');
+            };
+            
+            dataChannel.onmessage = (event) => {
+                try {
+                    const message = JSON.parse(event.data);
+                    handleP2PMessage(message);
+                } catch (error) {
+                    console.error('Error parsing P2P message:', error);
+                }
+            };
+            
+            dataChannel.onerror = (error) => {
+                console.error('Data channel error:', error);
+            };
+        }
+        
+        function sendP2P(data) {
+            if (dataChannel && dataChannel.readyState === 'open') {
+                try {
+                    dataChannel.send(JSON.stringify(data));
+                    return true;
+                } catch (error) {
+                    console.error('Error sending P2P data:', error);
+                    return false;
+                }
+            }
+            return false;
+        }
+        
+        function handleP2PMessage(message) {
+            if (!message || !message.type) return;
+            
+            state.isApplyingRemoteChange = true;
+            
+            try {
+                switch(message.type) {
+                    case 'draw':
+                        if (message.stroke) {
+                            applyStroke(message.stroke);
+                        }
+                        break;
+                    case 'text-add':
+                        if (message.element) {
+                            applyTextAdd(message.element);
+                        }
+                        break;
+                    case 'text-update':
+                        if (message.element) {
+                            applyTextUpdate(message.element);
+                        }
+                        break;
+                    case 'text-delete':
+                        if (message.element) {
+                            applyTextDelete(message.element);
+                        }
+                        break;
+                    case 'clear':
+                        applyClear();
+                        break;
+                    case 'heartbeat':
+                        // Peer is alive
+                        break;
+                }
+            } catch (error) {
+                console.error('Error handling P2P message:', error);
+            } finally {
+                state.isApplyingRemoteChange = false;
+            }
+        }
+        
+        function startP2PHeartbeat() {
+            if (heartbeatInterval) clearInterval(heartbeatInterval);
+            
+            heartbeatInterval = setInterval(() => {
+                sendP2P({ type: 'heartbeat', timestamp: Date.now() });
+            }, 3000);
+        }
+        
+        function updateConnectionStatus(status) {
+            const statusText = {
+                'new': 'Подключение...',
+                'connecting': 'Подключение...',
+                'connected': '✓ Подключено',
+                'disconnected': '✗ Отключено',
+                'failed': '✗ Ошибка подключения',
+                'closed': 'Закрыто'
+            };
+            
+            const statusEl = document.getElementById('status-text');
+            const dotEl = document.getElementById('conn-status-dot');
+            
+            if (statusEl) {
+                statusEl.textContent = statusText[status] || status;
+            }
+            
+            if (dotEl) {
+                dotEl.className = '';
+                if (status === 'connected') {
+                    dotEl.classList.add('connected');
+                } else if (status === 'connecting' || status === 'new') {
+                    dotEl.classList.add('connecting');
+                }
+            }
+        }
+        
+        function showCanvas() {
+            document.getElementById('connection-panel').style.display = 'none';
+            document.getElementById('main-toolbar').style.display = 'flex';
+            document.getElementById('canvasContainer').style.display = 'block';
+            resizeCanvas();
+        }
+        
+        function copyToClipboard(text) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showToast('✓ Скопировано в буфер обмена', 'success');
+                }).catch(() => {
+                    fallbackCopy(text);
+                });
+            } else {
+                fallbackCopy(text);
+            }
+        }
+        
+        function fallbackCopy(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-9999px';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showToast('✓ Скопировано', 'success');
+            } catch (err) {
+                showToast('Не удалось скопировать', 'error');
+            }
+            document.body.removeChild(textarea);
+        }
+        
+        // ============================================
+        // APPLICATION STATE
+        // ============================================
+        
+        // Message retry queue
+        const messageQueue = [];
+        let retryTimer = null;
+        let messageSequence = 0;
+        const messageBuffer = new Map();
+        let lastProcessedSequence = -1;
+        
+        // Mobile detection
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        
+        // Active drawings for multi-touch support
+        const activeDrawings = new Map(); // identifier -> drawing state
+        
+        // Throttling for mobile
+        const broadcastThrottle = isMobile ? 100 : 50;
+        let lastBroadcastTime = 0;
+        
+        const state = {
+            // User
+            userId: generateUUID(),
+            
+            // Drawing state
+            mode: 'draw',
+            currentColor: '#1E293B',
+            brushSize: 5,
+            textSize: '20px',
+            isDrawing: false,
+            isEraser: false,
+            currentStroke: [],
+            
+            // Data structures - using Maps for O(1) lookup
+            strokes: [],
+            strokesMap: new Map(),
+            textElements: new Map(),
+            textBoxes: [], // Keep for compatibility
+            
+            // Drag state
+            draggedTextBox: null,
+            dragOffset: { x: 0, y: 0 },
+            
+            // Sync state
+            isApplyingRemoteChange: false,
+            
+            // Operation log for debugging
+            operationLog: [],
+            
+            // Deleted elements tracking
+            deletedElements: new Set(),
+            
+            // Connection state
+            connectionStatus: 'disconnected'
+        };
+
+        // Configuration
+        const config = {
+            maxTextElements: 500
+        };
+
+        // Colors configuration
+        const colors = [
+            { name: 'Чёрный', value: '#1E293B' },
+            { name: 'Красный', value: '#EF4444' },
+            { name: 'Синий', value: '#3B82F6' },
+            { name: 'Зелёный', value: '#10B981' },
+            { name: 'Жёлтый', value: '#FBBF24' },
+            { name: 'Оранжевый', value: '#F97316' },
+            { name: 'Фиолетовый', value: '#A855F7' },
+            { name: 'Розовый', value: '#EC4899' },
+            { name: 'Коричневый', value: '#92400E' },
+            { name: 'Белый', value: '#FFFFFF' }
+        ];
+
+        // Canvas setup
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const canvasContainer = document.getElementById('canvasContainer');
+
+        function resizeCanvas() {
+            const rect = canvasContainer.getBoundingClientRect();
+            
+            // Use device pixel ratio for sharp rendering
+            const dpr = window.devicePixelRatio || 1;
+            const maxDpr = isMobile ? 2 : dpr; // Cap at 2x on mobile for performance
+            
+            canvas.width = rect.width * maxDpr;
+            canvas.height = rect.height * maxDpr;
+            canvas.style.width = rect.width + 'px';
+            canvas.style.height = rect.height + 'px';
+            
+            ctx.scale(maxDpr, maxDpr);
+            
+            redrawCanvas();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // ============================================
+        // P2P BROADCAST FUNCTIONS
+        // ============================================
+        
+        function shouldBroadcast() {
+            const now = Date.now();
+            if (now - lastBroadcastTime < broadcastThrottle) {
+                return false;
+            }
+            lastBroadcastTime = now;
+            return true;
+        }
+        
+        function broadcastStroke(stroke) {
+            if (!shouldBroadcast()) return;
+            sendP2P({
+                type: 'draw',
+                stroke: stroke,
+                userId: state.userId,
+                timestamp: Date.now()
+            });
+        }
+
+        function broadcastTextAction(action, element) {
+            sendP2P({
+                type: `text-${action}`,
+                element: element,
+                userId: state.userId,
+                timestamp: Date.now()
+            });
+        }
+
+        function broadcastClear() {
+            sendP2P({
+                type: 'clear',
+                userId: state.userId,
+                timestamp: Date.now()
+            });
+        }
+
+        // ============================================
+        // APPLY INCOMING OPERATIONS
+        // ============================================
+        
+        function applyStroke(stroke) {
+            if (!stroke || !stroke.id) return;
+            
+            // Check if we already have this stroke
+            if (state.strokesMap.has(stroke.id)) {
+                return;
+            }
+            
+            state.strokes.push(stroke);
+            state.strokesMap.set(stroke.id, stroke);
+            redrawCanvas();
+        }
+        
+        function applyTextAdd(element) {
+            if (!element || !element.id) return;
+            
+            // Check if already exists or was deleted
+            if (state.textElements.has(element.id) || state.deletedElements.has(element.id)) {
+                return;
+            }
+            
+            state.textElements.set(element.id, element);
+            state.textBoxes.push(element);
+            renderTextBox(element, false);
+        }
+        
+        function applyTextUpdate(element) {
+            if (!element || !element.id) return;
+            
+            // Ignore if deleted
+            if (state.deletedElements.has(element.id)) {
+                return;
+            }
+            
+            const existing = state.textElements.get(element.id);
+            if (existing) {
+                existing.text = element.text;
+                existing.x = element.x;
+                existing.y = element.y;
+                
+                const domElement = document.getElementById('text-' + element.id);
+                if (domElement) {
+                    const input = domElement.querySelector('.text-input');
+                    if (input && document.activeElement !== input) {
+                        input.value = element.text;
+                    }
+                    domElement.style.left = element.x + 'px';
+                    domElement.style.top = element.y + 'px';
+                }
+            }
+        }
+        
+        function applyTextDelete(element) {
+            if (!element || !element.id) return;
+            
+            state.textElements.delete(element.id);
+            state.textBoxes = state.textBoxes.filter(tb => tb.id !== element.id);
+            state.deletedElements.add(element.id);
+            
+            const domElement = document.getElementById('text-' + element.id);
+            if (domElement) {
+                domElement.remove();
+            }
+        }
+        
+        function applyClear() {
+            clearCanvasState();
+        }
+        
+
+
+        // ============================================
+        // CANVAS STATE MANAGEMENT
+        // ============================================
+        
+        function clearCanvasState() {
+            state.strokes = [];
+            state.strokesMap.clear();
+            state.textBoxes = [];
+            state.textElements.clear();
+            state.currentStroke = [];
+            redrawCanvas();
+            document.querySelectorAll('.text-box').forEach(el => el.remove());
+        }
+
+        // Color picker setup
+        function setupColorPicker(containerId, callback) {
+            const container = document.getElementById(containerId);
+            colors.forEach((color, index) => {
+                const colorDiv = document.createElement('div');
+                colorDiv.className = 'color-option' + (index === 0 ? ' active' : '');
+                colorDiv.style.backgroundColor = color.value;
+                colorDiv.title = color.name;
+                colorDiv.addEventListener('click', () => {
+                    container.querySelectorAll('.color-option').forEach(el => el.classList.remove('active'));
+                    colorDiv.classList.add('active');
+                    callback(color.value);
+                });
+                container.appendChild(colorDiv);
+            });
+        }
+
+        setupColorPicker('colorPicker', (color) => {
+            state.currentColor = color;
+            state.isEraser = false;
+            document.getElementById('eraserBtn').classList.remove('active');
+        });
+
+        setupColorPicker('textColorPicker', (color) => {
+            state.currentColor = color;
+        });
+
+        // Brush size picker
+        document.getElementById('brushSizePicker').addEventListener('click', (e) => {
+            if (e.target.classList.contains('size-option')) {
+                document.querySelectorAll('#brushSizePicker .size-option').forEach(el => el.classList.remove('active'));
+                e.target.classList.add('active');
+                state.brushSize = parseInt(e.target.dataset.size);
+            }
+        });
+
+        // Text size picker
+        document.getElementById('textSizePicker').addEventListener('click', (e) => {
+            if (e.target.classList.contains('size-option')) {
+                document.querySelectorAll('#textSizePicker .size-option').forEach(el => el.classList.remove('active'));
+                e.target.classList.add('active');
+                state.textSize = e.target.dataset.size;
+            }
+        });
+
+        // Eraser button
+        document.getElementById('eraserBtn').addEventListener('click', () => {
+            state.isEraser = !state.isEraser;
+            document.getElementById('eraserBtn').classList.toggle('active');
+        });
+
+        // Mode toggle
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                state.mode = btn.dataset.mode;
+                
+                if (state.mode === 'draw') {
+                    document.getElementById('drawTools').style.display = 'flex';
+                    document.getElementById('textTools').style.display = 'none';
+                    canvas.style.cursor = 'crosshair';
+                } else {
+                    document.getElementById('drawTools').style.display = 'none';
+                    document.getElementById('textTools').style.display = 'flex';
+                    canvas.style.cursor = 'text';
+                }
+            });
+        });
+
+        // Unified drawing functions for mouse and touch
+        function startDrawing(pos, identifier = 'mouse') {
+            if (state.mode !== 'draw') return;
+            
+            activeDrawings.set(identifier, {
+                isDrawing: true,
+                points: [{
+                    x: pos.x,
+                    y: pos.y,
+                    color: state.isEraser ? '#FFFFFF' : state.currentColor,
+                    size: state.isEraser ? state.brushSize * 3 : state.brushSize
+                }]
+            });
+            
+            // For backward compatibility with single-touch
+            if (identifier === 'mouse') {
+                state.isDrawing = true;
+                state.currentStroke = activeDrawings.get(identifier).points;
+            }
+        }
+
+        function continueDrawing(pos, identifier = 'mouse') {
+            const drawing = activeDrawings.get(identifier);
+            if (!drawing || !drawing.isDrawing) return;
+            
+            drawing.points.push({
+                x: pos.x,
+                y: pos.y,
+                color: state.isEraser ? '#FFFFFF' : state.currentColor,
+                size: state.isEraser ? state.brushSize * 3 : state.brushSize
+            });
+            
+            // For backward compatibility
+            if (identifier === 'mouse') {
+                state.currentStroke = drawing.points;
+            }
+            
+            redrawCanvas();
+        }
+
+        function endDrawing(identifier = 'mouse') {
+            const drawing = activeDrawings.get(identifier);
+            if (!drawing || drawing.points.length === 0) {
+                activeDrawings.delete(identifier);
+                return;
+            }
+            
+            const stroke = {
+                id: generateUUID(),
+                userId: state.userId,
+                points: [...drawing.points],
+                timestamp: Date.now()
+            };
+            
+            state.strokes.push(stroke);
+            state.strokesMap.set(stroke.id, stroke);
+            
+            // Broadcast the stroke to other tabs
+            if (!state.isApplyingRemoteChange) {
+                broadcastStroke(stroke);
+            }
+            
+            activeDrawings.delete(identifier);
+            
+            // For backward compatibility
+            if (identifier === 'mouse') {
+                state.isDrawing = false;
+                state.currentStroke = [];
+            }
+        }
+
+        function getMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.clientX;
+            const clientY = e.clientY;
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
+        }
+        
+        function getTouchPos(touch) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: touch.clientX - rect.left,
+                y: touch.clientY - rect.top
+            };
+        }
+
+        function drawStroke(stroke) {
+            // Handle both old format (array) and new format (object with points)
+            const points = stroke.points || stroke;
+            if (!points || points.length < 2) return;
+            
+            ctx.beginPath();
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            for (let i = 0; i < points.length - 1; i++) {
+                ctx.strokeStyle = points[i].color;
+                ctx.lineWidth = points[i].size;
+                ctx.beginPath();
+                ctx.moveTo(points[i].x, points[i].y);
+                ctx.lineTo(points[i + 1].x, points[i + 1].y);
+                ctx.stroke();
+            }
+        }
+
+        function redrawCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            state.strokes.forEach(stroke => drawStroke(stroke));
+            if (state.currentStroke.length > 0) {
+                drawStroke(state.currentStroke);
+            }
+        }
+
+        // Mouse event handlers
+        canvas.addEventListener('mousedown', (e) => {
+            if (state.mode === 'draw') {
+                const pos = getMousePos(e);
+                startDrawing(pos, 'mouse');
+            } else if (state.mode === 'text') {
+                createTextBox(e);
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (state.mode === 'draw') {
+                const pos = getMousePos(e);
+                continueDrawing(pos, 'mouse');
+            }
+        });
+        
+        canvas.addEventListener('mouseup', () => {
+            if (state.mode === 'draw') {
+                endDrawing('mouse');
+            }
+        });
+        
+        canvas.addEventListener('mouseleave', () => {
+            if (state.mode === 'draw') {
+                endDrawing('mouse');
+            }
+        });
+
+        // Touch event handlers with multi-touch support
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            
+            if (state.mode === 'text') {
+                // For text mode, use first touch only
+                if (e.touches.length === 1) {
+                    createTextBox(e.touches[0]);
+                }
+                return;
+            }
+            
+            // Handle all touches for drawing
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const touch = e.changedTouches[i];
+                const pos = getTouchPos(touch);
+                const id = `touch_${touch.identifier}`;
+                startDrawing(pos, id);
+            }
+        }, {passive: false});
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            
+            if (state.mode !== 'draw') return;
+            
+            // Handle all active touches
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const touch = e.changedTouches[i];
+                const pos = getTouchPos(touch);
+                const id = `touch_${touch.identifier}`;
+                continueDrawing(pos, id);
+            }
+        }, {passive: false});
+
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            
+            if (state.mode !== 'draw') return;
+            
+            // End all lifted touches
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const touch = e.changedTouches[i];
+                const id = `touch_${touch.identifier}`;
+                endDrawing(id);
+            }
+        }, {passive: false});
+        
+        canvas.addEventListener('touchcancel', (e) => {
+            e.preventDefault();
+            
+            if (state.mode !== 'draw') return;
+            
+            // Cancel all touches
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const touch = e.changedTouches[i];
+                const id = `touch_${touch.identifier}`;
+                endDrawing(id);
+            }
+        }, {passive: false});
+
+        // ============================================
+        // TEXT BOX FUNCTIONS
+        // ============================================
+        
+        function createTextBox(e) {
+            const pos = getMousePos(e);
+            const textBox = {
+                id: generateUUID(),
+                userId: state.userId,
+                x: pos.x,
+                y: pos.y,
+                text: '',
+                color: state.currentColor,
+                size: state.textSize,
+                timestamp: Date.now()
+            };
+            
+            state.textBoxes.push(textBox);
+            state.textElements.set(textBox.id, textBox);
+            renderTextBox(textBox, true);
+            
+            // Broadcast new text box creation
+            if (!state.isApplyingRemoteChange) {
+                broadcastTextAction('add', textBox);
+            }
+            
+            // Enforce max text elements
+            if (state.textElements.size > config.maxTextElements) {
+                const oldest = state.textBoxes[0];
+                if (oldest) {
+                    deleteTextBox(oldest.id);
+                }
+            }
+        }
+        
+        function deleteTextBox(id) {
+            const textBox = state.textElements.get(id);
+            if (!textBox) return;
+            
+            state.textElements.delete(id);
+            state.textBoxes = state.textBoxes.filter(tb => tb.id !== id);
+            state.deletedElements.add(id);
+            
+            const element = document.getElementById('text-' + id);
+            if (element) {
+                element.remove();
+            }
+            
+            if (!state.isApplyingRemoteChange) {
+                broadcastTextAction('delete', textBox);
+            }
+        }
+
+        function renderTextBox(textBox, focus = false) {
+            let element = document.getElementById('text-' + textBox.id);
+            if (!element) {
+                element = document.createElement('div');
+                element.id = 'text-' + textBox.id;
+                element.className = 'text-box';
+                element.style.left = textBox.x + 'px';
+                element.style.top = textBox.y + 'px';
+                element.style.color = textBox.color;
+                element.style.fontSize = textBox.size;
+
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'text-input';
+                input.value = textBox.text;
+                input.style.fontSize = textBox.size;
+                input.style.color = textBox.color;
+                input.placeholder = 'Введите текст...';
+
+                input.addEventListener('input', (e) => {
+                    textBox.text = e.target.value;
+                    const element = state.textElements.get(textBox.id);
+                    if (element) {
+                        element.text = e.target.value;
+                    }
+                    // Broadcast text update
+                    if (!state.isApplyingRemoteChange) {
+                        broadcastTextAction('update', textBox);
+                    }
+                });
+
+                input.addEventListener('focus', () => {
+                    element.classList.add('editing');
+                });
+
+                input.addEventListener('blur', () => {
+                    element.classList.remove('editing');
+                });
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'text-delete';
+                deleteBtn.innerHTML = '×';
+                deleteBtn.addEventListener('click', () => {
+                    deleteTextBox(textBox.id);
+                });
+
+                element.appendChild(input);
+                element.appendChild(deleteBtn);
+
+                // Dragging functionality
+                element.addEventListener('mousedown', (e) => {
+                    if (e.target === input) return;
+                    state.draggedTextBox = textBox;
+                    state.dragOffset = {
+                        x: e.clientX - textBox.x,
+                        y: e.clientY - textBox.y
+                    };
+                });
+
+                canvasContainer.appendChild(element);
+
+                if (focus) {
+                    input.focus();
+                }
+            }
+        }
+
+        // Text box dragging
+        document.addEventListener('mousemove', (e) => {
+            if (state.draggedTextBox) {
+                const newX = e.clientX - state.dragOffset.x;
+                const newY = e.clientY - state.dragOffset.y;
+                state.draggedTextBox.x = newX;
+                state.draggedTextBox.y = newY;
+                const element = document.getElementById('text-' + state.draggedTextBox.id);
+                if (element) {
+                    element.style.left = newX + 'px';
+                    element.style.top = newY + 'px';
+                }
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (state.draggedTextBox) {
+                // Update in Map
+                const element = state.textElements.get(state.draggedTextBox.id);
+                if (element) {
+                    element.x = state.draggedTextBox.x;
+                    element.y = state.draggedTextBox.y;
+                }
+                
+                // Broadcast position update when dragging ends
+                if (!state.isApplyingRemoteChange) {
+                    broadcastTextAction('update', state.draggedTextBox);
+                }
+            }
+            state.draggedTextBox = null;
+        });
+
+        // ============================================
+        // UI EVENT HANDLERS
+        // ============================================
+        
+        // Clear canvas
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            if (confirm('Вы уверены, что хотите очистить доску?')) {
+                clearCanvasState();
+                // Broadcast clear action to other tabs
+                if (!state.isApplyingRemoteChange) {
+                    broadcastClear();
+                }
+            }
+        });
+
+        // Save as image
+        document.getElementById('saveBtn').addEventListener('click', () => {
+            // Create a temporary canvas to combine drawing and text
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            const tempCtx = tempCanvas.getContext('2d');
+
+            // Draw the canvas content
+            tempCtx.drawImage(canvas, 0, 0);
+
+            // Draw text boxes
+            state.textBoxes.forEach(textBox => {
+                tempCtx.fillStyle = textBox.color;
+                tempCtx.font = `${textBox.size} Arial`;
+                tempCtx.fillText(textBox.text, textBox.x, textBox.y + parseInt(textBox.size));
+            });
+
+            // Download
+            const link = document.createElement('a');
+            link.download = `школа-1430-доска-${state.roomId}.png`;
+            link.href = tempCanvas.toDataURL();
+            link.click();
+        });
+
+        // Connection panel event listeners
+        document.getElementById('create-room-btn').addEventListener('click', createRoom);
+        document.getElementById('join-room-btn').addEventListener('click', joinRoom);
+        document.getElementById('copy-offer').addEventListener('click', () => {
+            copyToClipboard(document.getElementById('offer-text').value);
+        });
+        document.getElementById('submit-answer').addEventListener('click', processAnswer);
+        document.getElementById('process-offer').addEventListener('click', processOffer);
+        document.getElementById('copy-answer').addEventListener('click', () => {
+            copyToClipboard(document.getElementById('answer-text').value);
+        });
+
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+        
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            
+            const icon = {
+                'success': '✓',
+                'error': '✗',
+                'warning': '⚠',
+                'info': 'ℹ'
+            }[type] || 'ℹ';
+            
+            toast.innerHTML = `<span class="toast-icon">${icon}</span><span>${message}</span>`;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('fade-out');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // ============================================
+        // CLEANUP ON UNLOAD
+        // ============================================
+        
+        window.addEventListener('beforeunload', () => {
+            if (heartbeatInterval) clearInterval(heartbeatInterval);
+            if (peerConnection) {
+                try {
+                    peerConnection.close();
+                } catch (e) {
+                    console.error('Error closing peer connection:', e);
+                }
+            }
+            if (dataChannel) {
+                try {
+                    dataChannel.close();
+                } catch (e) {
+                    console.error('Error closing data channel:', e);
+                }
+            }
+        });
+
+        // ============================================
+        // MODE SELECTION
+        // ============================================
+        
+        document.getElementById('collaborative-mode').addEventListener('click', () => {
+            document.getElementById('mode-selector').style.display = 'none';
+            document.getElementById('connection-panel').style.display = 'flex';
+            document.getElementById('standalone-panel').style.display = 'none';
+        });
+        
+        document.getElementById('standalone-mode').addEventListener('click', () => {
+            document.getElementById('mode-selector').style.display = 'none';
+            document.getElementById('connection-panel').style.display = 'none';
+            document.getElementById('standalone-panel').style.display = 'flex';
+        });
+        
+        window.startStandaloneMode = function() {
+            document.getElementById('standalone-panel').style.display = 'none';
+            document.getElementById('main-toolbar').style.display = 'flex';
+            document.getElementById('canvasContainer').style.display = 'block';
+            
+            // Update status for standalone
+            const statusEl = document.getElementById('statusDot');
+            const countEl = document.getElementById('userCount');
+            if (statusEl) statusEl.style.background = '#3B82F6';
+            if (countEl) countEl.textContent = 'Самостоятельный режим';
+            
+            resizeCanvas();
+            showToast('✓ Режим самостоятельной работы активирован', 'success');
+        };
+        
+        // ============================================
+        // INITIALIZE APPLICATION
+        // ============================================
+        
+        // Setup tab switching
+        setupTabs();
+        
+        console.log('P2P Collaborative Whiteboard initialized');
+        console.log('User ID:', state.userId);
+        console.log('WebRTC P2P mode - manual SDP exchange');
+    </script>
 </body>
 </html>
