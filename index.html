@@ -335,6 +335,132 @@
         .status-dot.error {
             background: #EF4444;
         }
+        
+        .connection-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(30, 41, 59, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            backdrop-filter: blur(10px);
+        }
+        
+        .connection-content {
+            background: #FFFFFF;
+            max-width: 600px;
+            width: 90%;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        .connection-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1E293B;
+            margin-bottom: 8px;
+            text-align: center;
+            background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .connection-subtitle {
+            font-size: 16px;
+            color: #64748B;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .connection-step {
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .step-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1E293B;
+            margin-bottom: 12px;
+        }
+        
+        .step-description {
+            font-size: 15px;
+            color: #64748B;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+        
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .btn-large {
+            padding: 16px 24px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .connection-textarea {
+            width: 100%;
+            min-height: 120px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            padding: 12px;
+            border: 2px solid #E2E8F0;
+            border-radius: 8px;
+            resize: vertical;
+            margin-bottom: 12px;
+            background: #F8FAFC;
+            color: #1E293B;
+        }
+        
+        .connection-textarea:focus {
+            outline: none;
+            border-color: #6366F1;
+            background: #FFFFFF;
+        }
+        
+        .connection-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 24px;
+            padding: 12px;
+            background: #F8FAFC;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #64748B;
+        }
+        
+        #conn-status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #94A3B8;
+        }
+        
+        #conn-status-dot.connecting {
+            background: #FBBF24;
+            animation: pulse 1.5s infinite;
+        }
+        
+        #conn-status-dot.connected {
+            background: #10B981;
+        }
 
         @keyframes slideIn {
             from {
@@ -517,17 +643,62 @@
     </style>
 </head>
 <body>
-    <div class="toolbar">
+    <!-- Connection Panel (shown first) -->
+    <div id="connection-panel" class="connection-panel">
+        <div class="connection-content">
+            <h1 class="connection-title">P2P Совместная доска</h1>
+            <p class="connection-subtitle">Без регистрации, без серверов</p>
+            
+            <!-- Step 1: Choose role -->
+            <div id="step-role" class="connection-step">
+                <p class="step-description">Выберите действие:</p>
+                <div class="button-group">
+                    <button class="btn btn-primary btn-large" id="create-room-btn">🏠 Создать комнату (Хост)</button>
+                    <button class="btn btn-primary btn-large" id="join-room-btn">🔗 Присоединиться</button>
+                </div>
+            </div>
+            
+            <!-- Step 2: Host - Share Offer -->
+            <div id="step-host" class="connection-step" style="display:none">
+                <h3 class="step-title">Шаг 1: Скопируйте и отправьте это другому пользователю</h3>
+                <textarea id="offer-text" class="connection-textarea" readonly placeholder="Генерация кода подключения..."></textarea>
+                <button class="btn btn-primary" id="copy-offer">📋 Копировать</button>
+                
+                <h3 class="step-title" style="margin-top: 30px">Шаг 2: Вставьте ответ от другого пользователя</h3>
+                <textarea id="answer-input" class="connection-textarea" placeholder="Вставьте сюда код ответа от другого пользователя..."></textarea>
+                <button class="btn btn-primary" id="submit-answer">✓ Подключиться</button>
+            </div>
+            
+            <!-- Step 3: Joiner - Paste Offer, Get Answer -->
+            <div id="step-joiner" class="connection-step" style="display:none">
+                <h3 class="step-title">Шаг 1: Вставьте код от хоста</h3>
+                <textarea id="offer-input" class="connection-textarea" placeholder="Вставьте сюда код от хоста..."></textarea>
+                <button class="btn btn-primary" id="process-offer">➡ Далее</button>
+                
+                <div id="answer-section" style="display:none">
+                    <h3 class="step-title" style="margin-top: 30px">Шаг 2: Скопируйте и отправьте это хосту</h3>
+                    <textarea id="answer-text" class="connection-textarea" readonly placeholder="Генерация ответа..."></textarea>
+                    <button class="btn btn-primary" id="copy-answer">📋 Копировать</button>
+                </div>
+            </div>
+            
+            <div id="connection-status" class="connection-status">
+                <span class="status-dot" id="conn-status-dot"></span>
+                <span id="status-text">Не подключено</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="toolbar" id="main-toolbar" style="display:none">
         <div class="toolbar-section">
             <div class="logo">Школа 1430</div>
         </div>
 
         <div class="toolbar-separator"></div>
 
-        <div class="toolbar-section room-info">
-            <span class="room-label">ID комнаты:</span>
-            <span class="room-id" id="roomId"></span>
-            <button class="btn btn-primary" id="copyLinkBtn">Копировать ссылку</button>
+        <div class="toolbar-section status-indicator">
+            <span class="status-dot" id="statusDot"></span>
+            <span id="userCount">2 участника онлайн</span>
         </div>
 
         <div class="toolbar-separator"></div>
@@ -572,11 +743,6 @@
         </div>
 
         <div class="toolbar-separator"></div>
-
-        <div class="toolbar-section status-indicator">
-            <span class="status-dot" id="statusDot"></span>
-            <span id="userCount">0 участников онлайн</span>
-        </div>
     </div>
 
     <div class="canvas-container" id="canvasContainer">
@@ -584,6 +750,22 @@
     </div>
 
     <script>
+        // ============================================
+        // WEBRTC P2P CONNECTION
+        // ============================================
+        
+        let peerConnection = null;
+        let dataChannel = null;
+        let isInitiator = false;
+        let heartbeatInterval = null;
+        
+        const rtcConfiguration = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' }
+            ]
+        };
+        
         // ============================================
         // UTILITY FUNCTIONS
         // ============================================
@@ -597,6 +779,288 @@
             });
         }
 
+        // ============================================
+        // P2P CONNECTION FUNCTIONS
+        // ============================================
+        
+        function createPeerConnection() {
+            peerConnection = new RTCPeerConnection(rtcConfiguration);
+            
+            // ICE candidate handling
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate === null) {
+                    // All ICE candidates gathered
+                    if (isInitiator) {
+                        displayOffer();
+                    } else {
+                        displayAnswer();
+                    }
+                }
+            };
+            
+            // Connection state monitoring
+            peerConnection.onconnectionstatechange = () => {
+                console.log('Connection state:', peerConnection.connectionState);
+                updateConnectionStatus(peerConnection.connectionState);
+                
+                if (peerConnection.connectionState === 'connected') {
+                    showCanvas();
+                    startP2PHeartbeat();
+                    showToast('✓ Подключено к другому пользователю', 'success');
+                }
+                
+                if (peerConnection.connectionState === 'disconnected' || 
+                    peerConnection.connectionState === 'failed') {
+                    showToast('✗ Соединение потеряно', 'error');
+                }
+            };
+            
+            // Data channel events (for joiner)
+            peerConnection.ondatachannel = (event) => {
+                dataChannel = event.channel;
+                setupDataChannel();
+            };
+            
+            return peerConnection;
+        }
+        
+        async function createRoom() {
+            isInitiator = true;
+            document.getElementById('step-role').style.display = 'none';
+            document.getElementById('step-host').style.display = 'block';
+            
+            createPeerConnection();
+            
+            // Create data channel
+            dataChannel = peerConnection.createDataChannel('drawing');
+            setupDataChannel();
+            
+            // Create offer
+            try {
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+                // Wait for ICE gathering (onicecandidate will display when complete)
+            } catch (error) {
+                console.error('Error creating offer:', error);
+                showToast('Ошибка создания комнаты', 'error');
+            }
+        }
+        
+        function displayOffer() {
+            const offerText = JSON.stringify(peerConnection.localDescription);
+            document.getElementById('offer-text').value = offerText;
+            showToast('Код готов! Отправьте его другому пользователю', 'info');
+        }
+        
+        async function processAnswer() {
+            const answerText = document.getElementById('answer-input').value.trim();
+            if (!answerText) {
+                showToast('Вставьте ответ от другого пользователя', 'warning');
+                return;
+            }
+            
+            try {
+                const answer = JSON.parse(answerText);
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+                document.getElementById('step-host').style.display = 'none';
+                updateConnectionStatus('connecting');
+            } catch (error) {
+                console.error('Error processing answer:', error);
+                showToast('Ошибка: неверный формат ответа', 'error');
+            }
+        }
+        
+        async function joinRoom() {
+            isInitiator = false;
+            document.getElementById('step-role').style.display = 'none';
+            document.getElementById('step-joiner').style.display = 'block';
+        }
+        
+        async function processOffer() {
+            const offerText = document.getElementById('offer-input').value.trim();
+            if (!offerText) {
+                showToast('Вставьте код от хоста', 'warning');
+                return;
+            }
+            
+            try {
+                const offer = JSON.parse(offerText);
+                
+                createPeerConnection();
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+                
+                // Create answer
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+                
+                // Show answer section
+                document.getElementById('offer-input').style.display = 'none';
+                document.getElementById('process-offer').style.display = 'none';
+                document.getElementById('answer-section').style.display = 'block';
+                
+                // Wait for ICE gathering
+            } catch (error) {
+                console.error('Error processing offer:', error);
+                showToast('Ошибка: неверный формат кода от хоста', 'error');
+            }
+        }
+        
+        function displayAnswer() {
+            const answerText = JSON.stringify(peerConnection.localDescription);
+            document.getElementById('answer-text').value = answerText;
+            showToast('Код готов! Отправьте его хосту', 'info');
+            updateConnectionStatus('connecting');
+        }
+        
+        function setupDataChannel() {
+            dataChannel.onopen = () => {
+                console.log('Data channel opened');
+                updateConnectionStatus('connected');
+            };
+            
+            dataChannel.onclose = () => {
+                console.log('Data channel closed');
+                updateConnectionStatus('disconnected');
+            };
+            
+            dataChannel.onmessage = (event) => {
+                try {
+                    const message = JSON.parse(event.data);
+                    handleP2PMessage(message);
+                } catch (error) {
+                    console.error('Error parsing P2P message:', error);
+                }
+            };
+            
+            dataChannel.onerror = (error) => {
+                console.error('Data channel error:', error);
+            };
+        }
+        
+        function sendP2P(data) {
+            if (dataChannel && dataChannel.readyState === 'open') {
+                try {
+                    dataChannel.send(JSON.stringify(data));
+                    return true;
+                } catch (error) {
+                    console.error('Error sending P2P data:', error);
+                    return false;
+                }
+            }
+            return false;
+        }
+        
+        function handleP2PMessage(message) {
+            if (!message || !message.type) return;
+            
+            state.isApplyingRemoteChange = true;
+            
+            try {
+                switch(message.type) {
+                    case 'draw':
+                        if (message.stroke) {
+                            applyStroke(message.stroke);
+                        }
+                        break;
+                    case 'text-add':
+                        if (message.element) {
+                            applyTextAdd(message.element);
+                        }
+                        break;
+                    case 'text-update':
+                        if (message.element) {
+                            applyTextUpdate(message.element);
+                        }
+                        break;
+                    case 'text-delete':
+                        if (message.element) {
+                            applyTextDelete(message.element);
+                        }
+                        break;
+                    case 'clear':
+                        applyClear();
+                        break;
+                    case 'heartbeat':
+                        // Peer is alive
+                        break;
+                }
+            } catch (error) {
+                console.error('Error handling P2P message:', error);
+            } finally {
+                state.isApplyingRemoteChange = false;
+            }
+        }
+        
+        function startP2PHeartbeat() {
+            if (heartbeatInterval) clearInterval(heartbeatInterval);
+            
+            heartbeatInterval = setInterval(() => {
+                sendP2P({ type: 'heartbeat', timestamp: Date.now() });
+            }, 3000);
+        }
+        
+        function updateConnectionStatus(status) {
+            const statusText = {
+                'new': 'Подключение...',
+                'connecting': 'Подключение...',
+                'connected': '✓ Подключено',
+                'disconnected': '✗ Отключено',
+                'failed': '✗ Ошибка подключения',
+                'closed': 'Закрыто'
+            };
+            
+            const statusEl = document.getElementById('status-text');
+            const dotEl = document.getElementById('conn-status-dot');
+            
+            if (statusEl) {
+                statusEl.textContent = statusText[status] || status;
+            }
+            
+            if (dotEl) {
+                dotEl.className = '';
+                if (status === 'connected') {
+                    dotEl.classList.add('connected');
+                } else if (status === 'connecting' || status === 'new') {
+                    dotEl.classList.add('connecting');
+                }
+            }
+        }
+        
+        function showCanvas() {
+            document.getElementById('connection-panel').style.display = 'none';
+            document.getElementById('main-toolbar').style.display = 'flex';
+            document.getElementById('canvasContainer').style.display = 'block';
+            resizeCanvas();
+        }
+        
+        function copyToClipboard(text) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showToast('✓ Скопировано в буфер обмена', 'success');
+                }).catch(() => {
+                    fallbackCopy(text);
+                });
+            } else {
+                fallbackCopy(text);
+            }
+        }
+        
+        function fallbackCopy(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-9999px';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showToast('✓ Скопировано', 'success');
+            } catch (err) {
+                showToast('Не удалось скопировать', 'error');
+            }
+            document.body.removeChild(textarea);
+        }
+        
         // ============================================
         // APPLICATION STATE
         // ============================================
@@ -620,9 +1084,8 @@
         let lastBroadcastTime = 0;
         
         const state = {
-            // User & Room
+            // User
             userId: generateUUID(),
-            roomId: '',
             
             // Drawing state
             mode: 'draw',
@@ -644,16 +1107,7 @@
             dragOffset: { x: 0, y: 0 },
             
             // Sync state
-            broadcastChannel: null,
-            processedMessages: new Set(),
             isApplyingRemoteChange: false,
-            lastSyncTime: Date.now(),
-            
-            // User presence
-            activeUsers: new Map(),
-            heartbeatInterval: null,
-            stateSyncInterval: null,
-            presenceCheckInterval: null,
             
             // Operation log for debugging
             operationLog: [],
@@ -662,33 +1116,13 @@
             deletedElements: new Set(),
             
             // Connection state
-            connectionStatus: 'connected',
-            lastCursorBroadcast: 0,
-            
-            // Performance metrics
-            performanceMetrics: {
-                messagesSent: 0,
-                messagesReceived: 0,
-                lastFPS: 60,
-                lastCheck: Date.now()
-            }
+            connectionStatus: 'disconnected'
         };
 
         // Configuration
         const config = {
-            heartbeatInterval: 5000,
-            stateSyncInterval: 30000,
-            presenceTimeout: 15000,
-            maxOperationsLog: 100,
-            maxTextElements: 500,
-            processedMessagesTTL: 300000,
-            reconnectInterval: 3000,
-            messageRetryAttempts: 3,
-            messageRetryDelay: 1000,
-            cursorBroadcastThrottle: 100
+            maxTextElements: 500
         };
-
-        const validMessageTypes = ['draw', 'text-add', 'text-update', 'text-delete', 'clear', 'state-sync', 'heartbeat', 'request-sync'];
 
         // Colors configuration
         const colors = [
@@ -730,357 +1164,8 @@
         resizeCanvas();
 
         // ============================================
-        // LOGGING & DEBUGGING
+        // P2P BROADCAST FUNCTIONS
         // ============================================
-        
-        function logOperation(category, type, success, details = '') {
-            const log = {
-                category,
-                type,
-                success,
-                details,
-                timestamp: Date.now()
-            };
-            state.operationLog.push(log);
-            
-            // Keep only last 100 operations
-            if (state.operationLog.length > config.maxOperationsLog) {
-                state.operationLog.shift();
-            }
-            
-            // Log to console in debug mode
-            if (success) {
-                console.log(`[${category}] ${type}:`, details || 'success');
-            } else {
-                console.error(`[${category}] ${type} FAILED:`, details);
-            }
-        }
-
-        // ============================================
-        // MESSAGE VALIDATION
-        // ============================================
-        
-        function validateMessage(msg) {
-            if (!msg || typeof msg !== 'object') {
-                logOperation('validation', 'invalid-format', false, 'Not an object');
-                return false;
-            }
-            
-            if (!msg.type || !msg.messageId || !msg.userId) {
-                logOperation('validation', 'missing-fields', false, `type:${msg.type}, mid:${msg.messageId}, uid:${msg.userId}`);
-                return false;
-            }
-            
-            if (!validMessageTypes.includes(msg.type)) {
-                logOperation('validation', 'invalid-type', false, msg.type);
-                return false;
-            }
-            
-            // Check if we've already processed this message
-            if (state.processedMessages.has(msg.messageId)) {
-                logOperation('validation', 'duplicate', false, msg.messageId);
-                return false;
-            }
-            
-            // Don't process our own messages
-            if (msg.userId === state.userId) {
-                return false;
-            }
-            
-            return true;
-        }
-
-        // ============================================
-        // ROOM MANAGEMENT
-        // ============================================
-        
-        function generateRoomId() {
-            return Math.random().toString(36).substring(2, 8);
-        }
-
-        function initializeRoom() {
-            let roomId = window.location.hash.substring(1);
-            if (!roomId) {
-                roomId = generateRoomId();
-                window.location.hash = roomId;
-            }
-            state.roomId = roomId;
-            document.getElementById('roomId').textContent = roomId;
-            
-            console.log('Session initialized:', {
-                userId: state.userId,
-                roomId: state.roomId
-            });
-            
-            // Initialize Broadcast Channel for collaboration
-            initializeBroadcastChannel();
-            
-            // Start periodic tasks
-            startHeartbeat();
-            startStateSync();
-            startPresenceCheck();
-            startCleanup();
-        }
-
-        // ============================================
-        // BROADCAST CHANNEL MANAGEMENT
-        // ============================================
-        
-        function checkCompatibility() {
-            // Check BroadcastChannel support
-            if (!('BroadcastChannel' in window)) {
-                showWarning('⚠️ Ваш браузер не поддерживает совместную работу. Обновите браузер до последней версии или используйте Chrome/Firefox/Safari 15.5+');
-                return false;
-            }
-            
-            // Check touch support
-            if (hasTouch) {
-                console.log('✓ Touch support detected');
-            }
-            
-            // Check canvas support
-            const testCanvas = document.createElement('canvas');
-            if (!testCanvas.getContext || !testCanvas.getContext('2d')) {
-                showError('✗ Ваш браузер не поддерживает Canvas');
-                return false;
-            }
-            
-            console.log('Device info:', {isMobile, hasTouch, userAgent: navigator.userAgent});
-            return true;
-        }
-        
-        function showWarning(message) {
-            const warning = document.createElement('div');
-            warning.className = 'warning-banner';
-            warning.textContent = message;
-            document.body.insertBefore(warning, document.body.firstChild);
-        }
-        
-        function initializeBroadcastChannel() {
-            if (!checkCompatibility()) {
-                console.warn('Browser compatibility check failed');
-                return;
-            }
-            
-            try {
-                const channelName = `board_${state.roomId}`;
-                state.broadcastChannel = new BroadcastChannel(channelName);
-                
-                state.broadcastChannel.onmessage = (event) => {
-                    handleIncomingMessage(event.data);
-                };
-                
-                state.broadcastChannel.onerror = (error) => {
-                    console.error('Broadcast Channel error:', error);
-                    logOperation('channel', 'error', false, error.message);
-                    updateConnectionStatus('error');
-                    showToast('Ошибка соединения', 'error');
-                    
-                    // Attempt to reconnect
-                    setTimeout(reconnectChannel, config.reconnectInterval);
-                };
-                
-                state.broadcastChannel.onmessageerror = (event) => {
-                    console.error('Message deserialization error:', event);
-                    logOperation('error', 'messageerror', false, 'Failed to deserialize message');
-                    showToast('Ошибка получения данных', 'error');
-                    
-                    // Try to recover by requesting state sync
-                    requestFullStateSync();
-                };
-                
-                logOperation('channel', 'initialized', true, channelName);
-                updateConnectionStatus('connected');
-                showToast('✓ Подключено', 'success');
-                
-            } catch (error) {
-                console.error('Broadcast Channel not available:', error);
-                logOperation('channel', 'init-failed', false, error.message);
-                updateConnectionStatus('error');
-                showToast('⚠️ Совместная работа недоступна', 'warning');
-            }
-        }
-        
-        function reconnectChannel() {
-            if (state.broadcastChannel) {
-                try {
-                    state.broadcastChannel.close();
-                } catch (e) {
-                    console.error('Error closing channel:', e);
-                }
-            }
-            initializeBroadcastChannel();
-        }
-        
-        function updateConnectionStatus(status) {
-            state.connectionStatus = status;
-            const statusDot = document.getElementById('statusDot');
-            if (statusDot) {
-                if (status === 'connected') {
-                    statusDot.classList.remove('error');
-                } else if (status === 'error') {
-                    statusDot.classList.add('error');
-                }
-            }
-        }
-        
-        function requestFullStateSync() {
-            broadcastMessage({
-                type: 'request-sync',
-                requesterId: state.userId,
-                timestamp: Date.now()
-            });
-            
-            // After a delay, send our state
-            setTimeout(() => {
-                broadcastStateSync();
-            }, 1000);
-        }
-
-        // ============================================
-        // INCOMING MESSAGE HANDLER
-        // ============================================
-        
-        function handleIncomingMessage(data) {
-            if (!validateMessage(data)) {
-                return;
-            }
-            
-            state.performanceMetrics.messagesReceived++;
-            
-            try {
-                // Mark message as processed
-                state.processedMessages.add(data.messageId);
-                
-                // Set flag to prevent broadcasting our own changes back
-                state.isApplyingRemoteChange = true;
-                
-                switch(data.type) {
-                    case 'draw':
-                        applyStroke(data.stroke);
-                        break;
-                    case 'text-add':
-                        applyTextAdd(data.element);
-                        break;
-                    case 'text-update':
-                        applyTextUpdate(data.element);
-                        break;
-                    case 'text-delete':
-                        applyTextDelete(data.element);
-                        break;
-                    case 'clear':
-                        applyClear();
-                        break;
-                    case 'state-sync':
-                        applyStateSync(data.state);
-                        break;
-                    case 'heartbeat':
-                        recordUserPresence(data.userId, data.timestamp);
-                        break;
-                    case 'request-sync':
-                        // Someone requested state sync, send ours
-                        setTimeout(broadcastStateSync, Math.random() * 1000);
-                        break;
-                }
-                
-                state.lastSyncTime = Date.now();
-                logOperation('applied', data.type, true, data.messageId);
-                
-            } catch (error) {
-                console.error('Error applying message:', error);
-                logOperation('applied', data.type, false, error.message);
-            } finally {
-                state.isApplyingRemoteChange = false;
-            }
-        }
-
-        // ============================================
-        // MESSAGE RETRY & ENHANCED VALIDATION
-        // ============================================
-        
-        function broadcastWithRetry(msg, retries = config.messageRetryAttempts) {
-            try {
-                if (state.broadcastChannel) {
-                    state.broadcastChannel.postMessage(msg);
-                    state.performanceMetrics.messagesSent++;
-                    logOperation('broadcast', msg.type, true, msg.messageId);
-                    return true;
-                }
-                return false;
-            } catch (error) {
-                console.error('Broadcast failed:', error);
-                logOperation('broadcast', msg.type, false, error.message);
-                
-                if (retries > 0) {
-                    messageQueue.push({msg, retries: retries - 1});
-                    scheduleRetry();
-                } else {
-                    showToast('Не удалось отправить изменения', 'error');
-                    updateConnectionStatus('error');
-                }
-                return false;
-            }
-        }
-        
-        function scheduleRetry() {
-            if (retryTimer) return;
-            
-            retryTimer = setTimeout(() => {
-                retryTimer = null;
-                const toRetry = [...messageQueue];
-                messageQueue.length = 0;
-                
-                toRetry.forEach(({msg, retries}) => {
-                    broadcastWithRetry(msg, retries);
-                });
-            }, config.messageRetryDelay);
-        }
-        
-        function validateDrawMessage(msg) {
-            if (!msg.stroke) return false;
-            if (!msg.stroke.id || typeof msg.stroke.id !== 'string') return false;
-            if (!Array.isArray(msg.stroke.points)) return false;
-            if (msg.stroke.points.length < 1) return false;
-            return true;
-        }
-        
-        function validateTextMessage(msg) {
-            if (!msg.element || typeof msg.element !== 'object') return false;
-            if (!msg.element.id || typeof msg.element.id !== 'string') return false;
-            return true;
-        }
-        
-        // ============================================
-        // BROADCAST FUNCTIONS
-        // ============================================
-        
-        function broadcastMessage(messageData) {
-            // Don't broadcast if we're applying a remote change
-            if (state.isApplyingRemoteChange) {
-                return;
-            }
-            
-            const msg = {
-                ...messageData,
-                messageId: generateUUID(),
-                userId: state.userId,
-                roomId: state.roomId,
-                timestamp: Date.now(),
-                sequence: messageSequence++
-            };
-            
-            // Enhanced validation before sending
-            if (msg.type === 'draw' && !validateDrawMessage(msg)) {
-                console.error('Invalid draw message:', msg);
-                return;
-            }
-            if ((msg.type === 'text-add' || msg.type === 'text-update' || msg.type === 'text-delete') && !validateTextMessage(msg)) {
-                console.error('Invalid text message:', msg);
-                return;
-            }
-            
-            broadcastWithRetry(msg);
-        }
         
         function shouldBroadcast() {
             const now = Date.now();
@@ -1093,37 +1178,28 @@
         
         function broadcastStroke(stroke) {
             if (!shouldBroadcast()) return;
-            
-            broadcastMessage({
+            sendP2P({
                 type: 'draw',
-                stroke: stroke
+                stroke: stroke,
+                userId: state.userId,
+                timestamp: Date.now()
             });
         }
 
         function broadcastTextAction(action, element) {
-            broadcastMessage({
+            sendP2P({
                 type: `text-${action}`,
-                element: element
+                element: element,
+                userId: state.userId,
+                timestamp: Date.now()
             });
         }
 
         function broadcastClear() {
-            broadcastMessage({
-                type: 'clear'
-            });
-        }
-        
-        function broadcastStateSync() {
-            const currentState = {
-                strokes: state.strokes,
-                textElements: Array.from(state.textElements.values()),
-                deletedIds: Array.from(state.deletedElements),
+            sendP2P({
+                type: 'clear',
+                userId: state.userId,
                 timestamp: Date.now()
-            };
-            
-            broadcastMessage({
-                type: 'state-sync',
-                state: currentState
             });
         }
 
@@ -1200,157 +1276,7 @@
             clearCanvasState();
         }
         
-        function applyStateSync(incomingState) {
-            if (!incomingState) return;
-            
-            // Only apply if newer than our last sync
-            if (incomingState.timestamp && incomingState.timestamp <= state.lastSyncTime) {
-                return;
-            }
-            
-            console.log('Applying state sync:', incomingState);
-            
-            // Merge deleted IDs from incoming state
-            if (incomingState.deletedIds) {
-                incomingState.deletedIds.forEach(id => state.deletedElements.add(id));
-            }
-            
-            // Merge strokes
-            if (incomingState.strokes) {
-                incomingState.strokes.forEach(stroke => {
-                    if (stroke.id && !state.strokesMap.has(stroke.id)) {
-                        state.strokes.push(stroke);
-                        state.strokesMap.set(stroke.id, stroke);
-                    }
-                });
-                redrawCanvas();
-            }
-            
-            // Merge text elements (filter out deleted ones)
-            if (incomingState.textElements) {
-                incomingState.textElements.forEach(element => {
-                    if (element.id && !state.textElements.has(element.id) && !state.deletedElements.has(element.id)) {
-                        state.textElements.set(element.id, element);
-                        state.textBoxes.push(element);
-                        renderTextBox(element, false);
-                    }
-                });
-            }
-            
-            state.lastSyncTime = Date.now();
-        }
 
-        // ============================================
-        // USER PRESENCE & HEARTBEAT
-        // ============================================
-        
-        function startHeartbeat() {
-            // Send immediate heartbeat
-            sendHeartbeat();
-            
-            // Send periodic heartbeats
-            state.heartbeatInterval = setInterval(() => {
-                sendHeartbeat();
-            }, config.heartbeatInterval);
-        }
-        
-        function sendHeartbeat() {
-            broadcastMessage({
-                type: 'heartbeat'
-            });
-        }
-        
-        function recordUserPresence(userId, timestamp) {
-            state.activeUsers.set(userId, timestamp || Date.now());
-            updateUserCount();
-        }
-        
-        function startPresenceCheck() {
-            state.presenceCheckInterval = setInterval(() => {
-                const now = Date.now();
-                const timeout = config.presenceTimeout;
-                
-                // Remove stale users
-                for (const [userId, lastSeen] of state.activeUsers.entries()) {
-                    if (now - lastSeen > timeout) {
-                        state.activeUsers.delete(userId);
-                    }
-                }
-                
-                updateUserCount();
-            }, 5000);
-        }
-        
-        function updateUserCount() {
-            const count = state.activeUsers.size + 1; // +1 for current user
-            const userCountEl = document.getElementById('userCount');
-            if (userCountEl) {
-                const word = count === 1 ? 'участник' : (count < 5 ? 'участника' : 'участников');
-                userCountEl.textContent = `${count} ${word} онлайн`;
-            }
-        }
-
-        // ============================================
-        // PERIODIC STATE SYNC
-        // ============================================
-        
-        function startStateSync() {
-            state.stateSyncInterval = setInterval(() => {
-                broadcastStateSync();
-                logOperation('sync', 'state-sync', true, 'Periodic sync');
-            }, config.stateSyncInterval);
-        }
-
-        // ============================================
-        // CLEANUP & MEMORY MANAGEMENT
-        // ============================================
-        
-        function startCleanup() {
-            setInterval(() => {
-                cleanupProcessedMessages();
-                cleanupDeletedElements();
-            }, 60000); // Every minute
-        }
-        
-        // ============================================
-        // PERFORMANCE MONITORING
-        // ============================================
-        
-        function startPerformanceMonitoring() {
-            setInterval(() => {
-                const now = Date.now();
-                const elapsed = (now - state.performanceMetrics.lastCheck) / 1000;
-                
-                const sendRate = state.performanceMetrics.messagesSent / elapsed;
-                const receiveRate = state.performanceMetrics.messagesReceived / elapsed;
-                
-                if (sendRate > 50 || receiveRate > 50) {
-                    console.warn('High message rate:', {sendRate, receiveRate});
-                    logOperation('performance', 'high-rate', false, `send:${sendRate.toFixed(1)}, recv:${receiveRate.toFixed(1)}`);
-                }
-                
-                // Reset counters
-                state.performanceMetrics.messagesSent = 0;
-                state.performanceMetrics.messagesReceived = 0;
-                state.performanceMetrics.lastCheck = now;
-            }, 5000);
-        }
-        
-        function cleanupProcessedMessages() {
-            // Clear old processed message IDs (older than 5 minutes)
-            if (state.processedMessages.size > 1000) {
-                state.processedMessages.clear();
-                logOperation('cleanup', 'processed-messages', true, 'Cleared');
-            }
-        }
-        
-        function cleanupDeletedElements() {
-            // Keep deleted elements set from growing indefinitely
-            if (state.deletedElements.size > 500) {
-                state.deletedElements.clear();
-                logOperation('cleanup', 'deleted-elements', true, 'Cleared');
-            }
-        }
 
         // ============================================
         // CANVAS STATE MANAGEMENT
@@ -1834,24 +1760,16 @@
             link.click();
         });
 
-        // Copy link
-        document.getElementById('copyLinkBtn').addEventListener('click', () => {
-            const url = window.location.href;
-            const textArea = document.createElement('textarea');
-            textArea.value = url;
-            textArea.style.position = 'fixed';
-            textArea.style.left = '-9999px';
-            document.body.appendChild(textArea);
-            textArea.select();
-            
-            try {
-                document.execCommand('copy');
-                showNotification('Ссылка скопирована!');
-            } catch (err) {
-                console.error('Failed to copy:', err);
-            }
-            
-            document.body.removeChild(textArea);
+        // Connection panel event listeners
+        document.getElementById('create-room-btn').addEventListener('click', createRoom);
+        document.getElementById('join-room-btn').addEventListener('click', joinRoom);
+        document.getElementById('copy-offer').addEventListener('click', () => {
+            copyToClipboard(document.getElementById('offer-text').value);
+        });
+        document.getElementById('submit-answer').addEventListener('click', processAnswer);
+        document.getElementById('process-offer').addEventListener('click', processOffer);
+        document.getElementById('copy-answer').addEventListener('click', () => {
+            copyToClipboard(document.getElementById('answer-text').value);
         });
 
         function showNotification(message) {
@@ -1889,17 +1807,19 @@
         // ============================================
         
         window.addEventListener('beforeunload', () => {
-            // Clear intervals
-            if (state.heartbeatInterval) clearInterval(state.heartbeatInterval);
-            if (state.stateSyncInterval) clearInterval(state.stateSyncInterval);
-            if (state.presenceCheckInterval) clearInterval(state.presenceCheckInterval);
-            
-            // Close broadcast channel
-            if (state.broadcastChannel) {
+            if (heartbeatInterval) clearInterval(heartbeatInterval);
+            if (peerConnection) {
                 try {
-                    state.broadcastChannel.close();
+                    peerConnection.close();
                 } catch (e) {
-                    console.error('Error closing channel:', e);
+                    console.error('Error closing peer connection:', e);
+                }
+            }
+            if (dataChannel) {
+                try {
+                    dataChannel.close();
+                } catch (e) {
+                    console.error('Error closing data channel:', e);
                 }
             }
         });
@@ -1908,10 +1828,9 @@
         // INITIALIZE APPLICATION
         // ============================================
         
-        initializeRoom();
-        startPerformanceMonitoring();
-        console.log('Collaborative whiteboard initialized with enhanced stability');
-        console.log('Active features: UUID tracking, message validation, retry logic, error handling, performance monitoring');
+        console.log('P2P Collaborative Whiteboard initialized');
+        console.log('User ID:', state.userId);
+        console.log('WebRTC P2P mode - manual SDP exchange');
     </script>
 </body>
 </html>
